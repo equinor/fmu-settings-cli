@@ -1,6 +1,8 @@
 """The main entry point for fmu-settings-cli."""
 
 import argparse
+import hashlib
+import secrets
 import sys
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor
@@ -78,26 +80,41 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def start_api_and_gui(args: argparse.Namespace) -> None:
+def generate_auth_token() -> str:
+    """Generates an authentication token.
+
+    This token is used to validate requests between the API and the GUI.
+
+    Returns:
+        A 256-bit token
+    """
+    random_bytes = secrets.token_hex(32)
+    return hashlib.sha256(random_bytes.encode()).hexdigest()
+
+
+def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
     """Starts both API and GUI as concurrent processes.
 
     Args:
-        args (argparse.Namespace): The arguments taken in from invocation.
+        token: Authentication token shared to api and gui
+        args: The arguments taken in from invocation
     """
     with ThreadPoolExecutor(max_workers=3) as executor:
         api_future = executor.submit(
             start_api_server,
+            token,
             host=args.host,
             port=args.api_port,
         )
         gui_future = executor.submit(
             start_gui_server,
+            token,
             host=args.host,
             port=args.gui_port,
         )
         browser_future = executor.submit(
             webbrowser.open,
-            f"http://localhost:{args.gui_port}",
+            f"http://localhost:{args.gui_port}/#token={token}",
         )
         try:
             api_future.result()
@@ -105,6 +122,7 @@ def start_api_and_gui(args: argparse.Namespace) -> None:
             browser_future.result()
         except KeyboardInterrupt:
             print("\nShutting down FMU Settings...")
+            executor.shutdown(wait=True)
             sys.exit(0)
 
 
@@ -112,13 +130,14 @@ def main(test_args: list[str] | None = None) -> None:
     """The main entry point."""
     args = _parse_args(test_args)
 
+    token = generate_auth_token()
     match args.command:
         case "api":
-            start_api_server(host=args.host, port=args.port)
+            start_api_server(token, host=args.host, port=args.port)
         case "gui":
-            start_gui_server(host=args.host, port=args.port)
+            start_gui_server(token, host=args.host, port=args.port)
         case _:
-            start_api_and_gui(args)
+            start_api_and_gui(token, args)
 
 
 if __name__ == "__main__":

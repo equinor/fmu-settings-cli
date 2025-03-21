@@ -6,14 +6,16 @@ from fmu.settings.gui import run_server
 
 
 def start_gui_server(
+    token: str,
     host: str = "127.0.0.1",
     port: int = 8000,
 ) -> None:
     """Starts the fmu-settings-api server.
 
     Args:
-        host (str): The host to bind the server to
-        port (int): The port to run the server on
+        token: The authentication token the GUI uses
+        host: The host to bind the server to
+        port: The port to run the server on
     """
     try:
         print(f"Starting FMU Settings GUI server on {host}:{port}...")
