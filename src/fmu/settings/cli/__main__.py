@@ -73,8 +73,8 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
     gui_parser.add_argument(
         "--host",
         type=str,
-        default="127.0.0.1",
-        help="Host to bind the GUI server to (default: 127.0.0.1)",
+        default="localhost",
+        help="Host to bind the GUI server to (default: localhost)",
     )
 
     return parser.parse_args(args)
@@ -105,6 +105,8 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
             token,
             host=args.host,
             port=args.api_port,
+            frontend_host=args.host,
+            frontend_port=args.gui_port,
         )
         gui_future = executor.submit(
             start_gui_server,
