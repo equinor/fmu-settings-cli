@@ -6,7 +6,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "src/fmu/settings/cli/_version.py"
+write_to = "src/fmu_settings_cli/_version.py"
 
 [project]
 name = "fmu-settings-cli"
@@ -48,7 +48,7 @@ Repository = "https://github.com/equinor/fmu-settings-cli"
 Documentation = "https://github.com/equinor/fmu-settings-cli"
 
 [project.scripts]
-fmu-settings = "fmu.settings.cli.__main__:main"
+fmu-settings = "fmu_settings_cli.__main__:main"
 
 [tool.coverage.run]
 omit = [

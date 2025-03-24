@@ -3,7 +3,7 @@
 import sys
 from unittest.mock import MagicMock, patch
 
-from fmu.settings.cli.__main__ import (
+from fmu_settings_cli.__main__ import (
     _parse_args,
     generate_auth_token,
     main,
@@ -21,21 +21,21 @@ def test_parse_args_no_input() -> None:
 
 def test_main_invocation_with_no_options() -> None:
     """Tests that fmu-settings calls 'start_api_and_gui'."""
-    with patch("fmu.settings.cli.__main__.start_api_and_gui") as mock_start_api_and_gui:
+    with patch("fmu_settings_cli.__main__.start_api_and_gui") as mock_start_api_and_gui:
         main([])
         mock_start_api_and_gui.assert_called_once()
 
 
 def test_main_invocation_with_api_subcommand() -> None:
     """Tests that fmu-settings calls 'start_api_and_gui'."""
-    with patch("fmu.settings.cli.__main__.start_api_server") as mock_start_api_server:
+    with patch("fmu_settings_cli.__main__.start_api_server") as mock_start_api_server:
         main(["api"])
         mock_start_api_server.assert_called_once()
 
 
 def test_main_invocation_with_gui_subcommand() -> None:
     """Tests that fmu-settings calls 'start_api_and_gui'."""
-    with patch("fmu.settings.cli.__main__.start_gui_server") as mock_start_gui_server:
+    with patch("fmu_settings_cli.__main__.start_gui_server") as mock_start_gui_server:
         main(["gui"])
         mock_start_gui_server.assert_called_once()
 
@@ -51,9 +51,9 @@ def test_start_api_and_gui_threads() -> None:
     token = generate_auth_token()
     args = MagicMock()
     with (
-        patch("fmu.settings.cli.__main__.start_api_server") as mock_start_api_server,
-        patch("fmu.settings.cli.__main__.start_gui_server") as mock_start_gui_server,
-        patch("fmu.settings.cli.__main__.webbrowser.open") as mock_webbrowser_open,
+        patch("fmu_settings_cli.__main__.start_api_server") as mock_start_api_server,
+        patch("fmu_settings_cli.__main__.start_gui_server") as mock_start_gui_server,
+        patch("fmu_settings_cli.__main__.webbrowser.open") as mock_webbrowser_open,
     ):
         start_api_and_gui(token, args)
         mock_start_api_server.assert_called_once()
@@ -66,12 +66,12 @@ def test_keyboard_interrupt_kills_threads() -> None:
     token = generate_auth_token()
     args = MagicMock()
     with (
-        patch("fmu.settings.cli.__main__.start_api_server") as mock_start_api_server,
-        patch("fmu.settings.cli.__main__.start_gui_server") as mock_start_gui_server,
+        patch("fmu_settings_cli.__main__.start_api_server") as mock_start_api_server,
+        patch("fmu_settings_cli.__main__.start_gui_server") as mock_start_gui_server,
         patch(
-            "fmu.settings.cli.__main__.webbrowser.open", side_effect=KeyboardInterrupt
+            "fmu_settings_cli.__main__.webbrowser.open", side_effect=KeyboardInterrupt
         ) as mock_webbrowser_open,
-        patch("fmu.settings.cli.__main__.sys.exit") as mock_sys_exit,
+        patch("fmu_settings_cli.__main__.sys.exit") as mock_sys_exit,
     ):
         start_api_and_gui(token, args)
         mock_start_api_server.assert_called_once()
