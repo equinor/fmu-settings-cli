@@ -2,7 +2,7 @@
 
 import sys
 
-from fmu.settings.gui import run_server
+from fmu_settings_gui import run_server
 
 
 def start_gui_server(
