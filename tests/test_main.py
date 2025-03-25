@@ -1,7 +1,10 @@
 """Tests for the __main__ module."""
 
+import argparse
 import sys
 from unittest.mock import MagicMock, patch
+
+from pytest import CaptureFixture
 
 from fmu_settings_cli.__main__ import (
     _parse_args,
@@ -46,35 +49,89 @@ def test_generate_auth_token() -> None:
     assert generate_auth_token() != generate_auth_token() != generate_auth_token()
 
 
-def test_start_api_and_gui_threads() -> None:
-    """Tests that all three threads are started."""
+def test_start_api_and_gui_processes(default_args: argparse.Namespace) -> None:
+    """Tests that all processes are submitted to the executor with expected args."""
     token = generate_auth_token()
-    args = MagicMock()
+
     with (
+        patch("fmu_settings_cli.__main__.ProcessPoolExecutor") as mock_executor,
         patch("fmu_settings_cli.__main__.start_api_server") as mock_start_api_server,
         patch("fmu_settings_cli.__main__.start_gui_server") as mock_start_gui_server,
         patch("fmu_settings_cli.__main__.webbrowser.open") as mock_webbrowser_open,
     ):
-        start_api_and_gui(token, args)
-        mock_start_api_server.assert_called_once()
-        mock_start_gui_server.assert_called_once()
-        mock_webbrowser_open.assert_called_once()
+        mock_executor_instance = MagicMock()
+        # Patch over the ProcessPoolExecutor. This requires that objects submitted
+        # to it are pickle-able, and mock objects _are not_. So extra mocking is
+        # required.
+        mock_executor.return_value.__enter__.return_value = mock_executor_instance
+
+        mock_api_future = MagicMock()
+        mock_gui_future = MagicMock()
+        mock_browser_future = MagicMock()
+
+        mock_executor_instance.submit.side_effect = [
+            mock_api_future,
+            mock_gui_future,
+            mock_browser_future,
+        ]
+
+        # Whew. Start it up then do assertions.
+        start_api_and_gui(token, default_args)
+
+        mock_executor.assert_called_once_with(max_workers=3)
+
+        mock_executor_instance.submit.assert_any_call(
+            mock_start_api_server,
+            token,
+            host=default_args.host,
+            port=default_args.api_port,
+            frontend_host=default_args.host,
+            frontend_port=default_args.gui_port,
+        )
+        mock_executor_instance.submit.assert_any_call(
+            mock_start_gui_server,
+            token,
+            host=default_args.host,
+            port=default_args.gui_port,
+        )
+        mock_executor_instance.submit.assert_any_call(
+            mock_webbrowser_open,
+            f"http://localhost:{default_args.gui_port}/#token={token}",
+        )
+
+        mock_browser_future.result.assert_called_once()
 
 
-def test_keyboard_interrupt_kills_threads() -> None:
-    """Tests that all three threads are started and killed on a KeyboardInterrupt."""
+def test_keyboard_interrupt_in_process_executor(
+    default_args: argparse.Namespace, capsys: CaptureFixture[str]
+) -> None:
+    """Tests that a KeyboardInterrupt issue sthe correct message."""
     token = generate_auth_token()
-    args = MagicMock()
     with (
+        patch("fmu_settings_cli.__main__.ProcessPoolExecutor") as mock_executor,
         patch("fmu_settings_cli.__main__.start_api_server") as mock_start_api_server,
         patch("fmu_settings_cli.__main__.start_gui_server") as mock_start_gui_server,
-        patch(
-            "fmu_settings_cli.__main__.webbrowser.open", side_effect=KeyboardInterrupt
-        ) as mock_webbrowser_open,
-        patch("fmu_settings_cli.__main__.sys.exit") as mock_sys_exit,
+        patch("fmu_settings_cli.__main__.webbrowser.open") as mock_webbrowser_open,
     ):
-        start_api_and_gui(token, args)
-        mock_start_api_server.assert_called_once()
-        mock_start_gui_server.assert_called_once()
-        mock_webbrowser_open.assert_called_once()
-        mock_sys_exit.assert_called_once()
+        mock_start_api_server.side_effect = lambda *args, **kwargs: None
+        mock_start_gui_server.side_effect = lambda *args, **kwargs: None
+        mock_webbrowser_open.return_value = True
+
+        mock_executor_instance = MagicMock()
+        mock_executor.return_value.__enter__.return_value = mock_executor_instance
+
+        mock_api_future = MagicMock()
+        mock_gui_future = MagicMock()
+        mock_browser_future = MagicMock()
+        mock_browser_future.result.side_effect = KeyboardInterrupt()
+
+        mock_executor_instance.submit.side_effect = [
+            mock_api_future,
+            mock_gui_future,
+            mock_browser_future,
+        ]
+
+        start_api_and_gui(token, default_args)
+        captured = capsys.readouterr()
+
+        assert "\nShutting down FMU Settings..." in captured.out
