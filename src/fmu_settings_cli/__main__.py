@@ -5,7 +5,7 @@ import hashlib
 import secrets
 import sys
 import webbrowser
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 from .api_server import start_api_server
 from .gui_server import start_gui_server
@@ -99,7 +99,7 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
         token: Authentication token shared to api and gui
         args: The arguments taken in from invocation
     """
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ProcessPoolExecutor(max_workers=3) as executor:
         api_future = executor.submit(
             start_api_server,
             token,
@@ -114,18 +114,19 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
             host=args.host,
             port=args.gui_port,
         )
+        # Does not need to be executed as a separate process, but causes this function
+        # to be called _after_ starting API and GUI. It finishes immediately
         browser_future = executor.submit(
-            webbrowser.open,
-            f"http://localhost:{args.gui_port}/#token={token}",
+            webbrowser.open, f"http://localhost:{args.gui_port}/#token={token}"
         )
         try:
+            browser_future.result()
+            print("FMU Settings is running. Press CTRL+C to quit")
+            # These block
             api_future.result()
             gui_future.result()
-            browser_future.result()
         except KeyboardInterrupt:
             print("\nShutting down FMU Settings...")
-            executor.shutdown(wait=True)
-            sys.exit(0)
 
 
 def main(test_args: list[str] | None = None) -> None:
