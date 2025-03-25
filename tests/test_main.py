@@ -9,6 +9,7 @@ from pytest import CaptureFixture
 from fmu_settings_cli.__main__ import (
     _parse_args,
     generate_auth_token,
+    init_worker,
     main,
     start_api_and_gui,
 )
@@ -78,7 +79,7 @@ def test_start_api_and_gui_processes(default_args: argparse.Namespace) -> None:
         # Whew. Start it up then do assertions.
         start_api_and_gui(token, default_args)
 
-        mock_executor.assert_called_once_with(max_workers=3)
+        mock_executor.assert_called_once_with(max_workers=3, initializer=init_worker)
 
         mock_executor_instance.submit.assert_any_call(
             mock_start_api_server,

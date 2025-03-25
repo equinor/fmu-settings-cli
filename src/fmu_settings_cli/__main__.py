@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import secrets
+import signal
 import sys
 import webbrowser
 from concurrent.futures import ProcessPoolExecutor
@@ -92,6 +93,11 @@ def generate_auth_token() -> str:
     return hashlib.sha256(random_bytes.encode()).hexdigest()
 
 
+def init_worker() -> None:
+    """Initializer to ignore signal interrupts on workers."""
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+
 def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
     """Starts both API and GUI as concurrent processes.
 
@@ -99,7 +105,7 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
         token: Authentication token shared to api and gui
         args: The arguments taken in from invocation
     """
-    with ProcessPoolExecutor(max_workers=3) as executor:
+    with ProcessPoolExecutor(max_workers=3, initializer=init_worker) as executor:
         api_future = executor.submit(
             start_api_server,
             token,
@@ -127,6 +133,9 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
             gui_future.result()
         except KeyboardInterrupt:
             print("\nShutting down FMU Settings...")
+            api_future.cancel()
+            gui_future.cancel()
+            executor.shutdown(wait=True)
 
 
 def main(test_args: list[str] | None = None) -> None:
