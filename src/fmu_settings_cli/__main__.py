@@ -59,6 +59,23 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
         help="Host to bind the API server to (default: 127.0.0.1)",
     )
     api_parser.add_argument(
+        "--gui-host",
+        type=str,
+        default="localhost",
+        help=(
+            "Host the GUI sends requests from. Sets the CORS host. (default: localhost)"
+        ),
+    )
+    api_parser.add_argument(
+        "--gui-port",
+        type=int,
+        default=8000,
+        help=(
+            "Port the GUI sends requests from. Sets the CORS port for the GUI host. "
+            "(default: 8000)"
+        ),
+    )
+    api_parser.add_argument(
         "--reload",
         action="store_true",
         help="Enable auto-reload for development",
@@ -145,7 +162,13 @@ def main(test_args: list[str] | None = None) -> None:
     token = generate_auth_token()
     match args.command:
         case "api":
-            start_api_server(token, host=args.host, port=args.port)
+            start_api_server(
+                token,
+                host=args.host,
+                port=args.port,
+                frontend_host=args.gui_host,
+                frontend_port=args.gui_port,
+            )
         case "gui":
             start_gui_server(token, host=args.host, port=args.port)
         case _:

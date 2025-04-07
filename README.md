@@ -22,8 +22,19 @@ It is also possible to specify the port and if the API should be reloaded, as
 in during development.
 
 ```bash
-fmu-settings api --port 8001 --reload
+fmu-settings api --port 8001
 ```
+
+By default the API will set CORS rules restricting requests to a default host
+and port (`localhost:8000`). In development with a GUI it's likely your
+frontend port will be something different. You can specify this like so:
+
+```bash
+fmu-settings api --gui-port 5173
+```
+
+This will update the CORS rules in the API to accept requests from
+`localhost:5173`.
 
 You can similarly start the GUI server:
 
