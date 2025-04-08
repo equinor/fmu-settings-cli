@@ -21,6 +21,8 @@ fmu-settings api
 It is also possible to specify the port and if the API should be reloaded, as
 in during development.
 
+## Starting the API only
+
 ```bash
 fmu-settings api --port 8001
 ```
@@ -48,6 +50,22 @@ export FMU_SETTINGS_PRINT_TOKEN=true
 # or
 FMU_SETTINGS_PRINT_TOKEN=true fmu-settings api --gui-port 5173
 ```
+
+It's also possible to print the full URL a user would be directed to with a
+similar URL flag and environment variable.
+
+```bash
+fmu-settings api --gui-port 5173 --print-url
+# or
+export FMU_SETTINGS_PRINT_URL=true
+# or
+FMU_SETTINGS_PRINT_URL=true fmu-settings api --gui-port 5173
+```
+
+Note that these additional flags are intended for development so they _only_ work
+with `fmu-settings api` subcommand.
+
+## Starting the GUI only
 
 You can similarly start the GUI server:
 
