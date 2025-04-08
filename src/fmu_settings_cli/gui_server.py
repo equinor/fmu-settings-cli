@@ -4,11 +4,13 @@ import sys
 
 from fmu_settings_gui import run_server
 
+from .constants import GUI_PORT, HOST
+
 
 def start_gui_server(
     token: str,
-    host: str = "127.0.0.1",
-    port: int = 8000,
+    host: str = HOST,
+    port: int = GUI_PORT,
 ) -> None:
     """Starts the fmu-settings-api server.
 

@@ -97,7 +97,7 @@ def test_start_api_and_gui_processes(default_args: argparse.Namespace) -> None:
         )
         mock_executor_instance.submit.assert_any_call(
             mock_webbrowser_open,
-            f"http://localhost:{default_args.gui_port}/#token={token}",
+            f"http://{default_args.host}:{default_args.gui_port}/#token={token}",
         )
 
         mock_browser_future.result.assert_called_once()

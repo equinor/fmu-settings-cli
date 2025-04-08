@@ -9,6 +9,7 @@ import webbrowser
 from concurrent.futures import ProcessPoolExecutor
 
 from .api_server import start_api_server
+from .constants import API_PORT, GUI_PORT, HOST
 from .gui_server import start_gui_server
 
 
@@ -22,20 +23,20 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--api-port",
         type=int,
-        default=8001,
-        help="Port to run the API on (default: 8001)",
+        default=API_PORT,
+        help=f"Port to run the API on (default: {API_PORT})",
     )
     parser.add_argument(
         "--gui-port",
         type=int,
-        default=8000,
-        help="Port to run the GUI on (default: 8000)",
+        default=GUI_PORT,
+        help=f"Port to run the GUI on (default: {GUI_PORT})",
     )
     parser.add_argument(
         "--host",
         type=str,
-        default="127.0.0.1",
-        help="Host to bind the servers to (default: 127.0.0.1)",
+        default=HOST,
+        help=f"Host to bind the API and GUI servers to (default: {HOST})",
     )
     parser.add_argument(
         "--reload",
@@ -49,30 +50,30 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
     api_parser.add_argument(
         "--port",
         type=int,
-        default=8001,
-        help="Port to run the API on (default: 8001)",
+        default=API_PORT,
+        help=f"Port to run the API on (default: {API_PORT})",
     )
     api_parser.add_argument(
         "--host",
         type=str,
-        default="127.0.0.1",
-        help="Host to bind the API server to (default: 127.0.0.1)",
+        default=HOST,
+        help=f"Host to bind the API server to (default: {HOST})",
     )
     api_parser.add_argument(
         "--gui-host",
         type=str,
-        default="localhost",
+        default=HOST,
         help=(
-            "Host the GUI sends requests from. Sets the CORS host. (default: localhost)"
+            f"Host the GUI sends requests from. Sets the CORS host. (default: {HOST})"
         ),
     )
     api_parser.add_argument(
         "--gui-port",
         type=int,
-        default=8000,
+        default=GUI_PORT,
         help=(
-            "Port the GUI sends requests from. Sets the CORS port for the GUI host. "
-            "(default: 8000)"
+            "Port the GUI sends requests from. Sets the CORS port. "
+            f"(default: {GUI_PORT})"
         ),
     )
     api_parser.add_argument(
@@ -85,14 +86,14 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
     gui_parser.add_argument(
         "--port",
         type=int,
-        default=8000,
-        help="Port to run the GUI on (default: 8000)",
+        default=GUI_PORT,
+        help=f"Port to run the GUI on (default: {GUI_PORT})",
     )
     gui_parser.add_argument(
         "--host",
         type=str,
-        default="localhost",
-        help="Host to bind the GUI server to (default: localhost)",
+        default=HOST,
+        help=f"Host to bind the GUI server to (default: {HOST})",
     )
 
     return parser.parse_args(args)
@@ -140,7 +141,7 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
         # Does not need to be executed as a separate process, but causes this function
         # to be called _after_ starting API and GUI. It finishes immediately
         browser_future = executor.submit(
-            webbrowser.open, f"http://localhost:{args.gui_port}/#token={token}"
+            webbrowser.open, f"http://{args.host}:{args.gui_port}/#token={token}"
         )
         try:
             browser_future.result()
