@@ -89,6 +89,14 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
             "Prints the token the API requires for authorization. Used for development."
         ),
     )
+    api_parser.add_argument(
+        "--print-url",
+        action="store_true",
+        help=(
+            "Prints the authorized URL a user would be directed to. "
+            "Used for development."
+        ),
+    )
 
     gui_parser = subparsers.add_parser("gui", help="Start the GUI server")
     gui_parser.add_argument(
@@ -124,6 +132,11 @@ def init_worker() -> None:
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
+def create_authorized_url(token: str, host: str, gui_port: int) -> str:
+    """Creates the authorized URL a user will be directed to."""
+    return f"http://{host}:{gui_port}/#token={token}"
+
+
 def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
     """Starts both API and GUI as concurrent processes.
 
@@ -149,7 +162,7 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
         # Does not need to be executed as a separate process, but causes this function
         # to be called _after_ starting API and GUI. It finishes immediately
         browser_future = executor.submit(
-            webbrowser.open, f"http://{args.host}:{args.gui_port}/#token={token}"
+            webbrowser.open, create_authorized_url(token, args.host, args.gui_port)
         )
         try:
             browser_future.result()
@@ -173,6 +186,11 @@ def main(test_args: list[str] | None = None) -> None:
         case "api":
             if args.print_token or os.getenv("FMU_SETTINGS_PRINT_TOKEN"):
                 print("API Token:", token)
+            if args.print_url or os.getenv("FMU_SETTINGS_PRINT_URL"):
+                print(
+                    "Authorized URL:",
+                    create_authorized_url(token, args.gui_host, args.gui_port),
+                )
             start_api_server(
                 token,
                 host=args.host,
