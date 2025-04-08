@@ -2,6 +2,7 @@
 
 import argparse
 import hashlib
+import os
 import secrets
 import signal
 import sys
@@ -80,6 +81,13 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
         "--reload",
         action="store_true",
         help="Enable auto-reload for development",
+    )
+    api_parser.add_argument(
+        "--print-token",
+        action="store_true",
+        help=(
+            "Prints the token the API requires for authorization. Used for development."
+        ),
     )
 
     gui_parser = subparsers.add_parser("gui", help="Start the GUI server")
@@ -163,6 +171,8 @@ def main(test_args: list[str] | None = None) -> None:
     token = generate_auth_token()
     match args.command:
         case "api":
+            if args.print_token or os.getenv("FMU_SETTINGS_PRINT_TOKEN"):
+                print("API Token:", token)
             start_api_server(
                 token,
                 host=args.host,
