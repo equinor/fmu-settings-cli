@@ -36,6 +36,19 @@ fmu-settings api --gui-port 5173
 This will update the CORS rules in the API to accept requests from
 `localhost:5173`.
 
+The API authorizes all requests with a randomly generated token. When starting
+the API for use in development this token can be printed by setting the
+`FMU_SETTINGS_PRINT_TOKEN` environment variable or providing the `--print-token`
+flag.
+
+```bash
+fmu-settings api --gui-port 5173 --print-token
+# or
+export FMU_SETTINGS_PRINT_TOKEN=true
+# or
+FMU_SETTINGS_PRINT_TOKEN=true fmu-settings api --gui-port 5173
+```
+
 You can similarly start the GUI server:
 
 ```bash
