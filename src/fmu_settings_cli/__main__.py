@@ -42,6 +42,7 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--reload",
         action="store_true",
+        default=False,
         help="Enable auto-reload for development",
     )
 
@@ -80,6 +81,7 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
     api_parser.add_argument(
         "--reload",
         action="store_true",
+        default=False,
         help="Enable auto-reload for development",
     )
     api_parser.add_argument(
@@ -152,6 +154,7 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
             port=args.api_port,
             frontend_host=args.host,
             frontend_port=args.gui_port,
+            reload=args.reload,
         )
         gui_future = executor.submit(
             start_gui_server,
@@ -197,6 +200,7 @@ def main(test_args: list[str] | None = None) -> None:
                 port=args.port,
                 frontend_host=args.gui_host,
                 frontend_port=args.gui_port,
+                reload=args.reload,
             )
         case "gui":
             start_gui_server(token, host=args.host, port=args.port)

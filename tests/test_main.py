@@ -88,6 +88,7 @@ def test_start_api_and_gui_processes(default_args: argparse.Namespace) -> None:
             port=default_args.api_port,
             frontend_host=default_args.host,
             frontend_port=default_args.gui_port,
+            reload=default_args.reload,
         )
         mock_executor_instance.submit.assert_any_call(
             mock_start_gui_server,
