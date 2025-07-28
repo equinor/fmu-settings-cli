@@ -28,8 +28,8 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "fmu-settings-api @ git+https://github.com/equinor/fmu-settings-api",
-    "fmu-settings-gui @ git+https://github.com/equinor/fmu-settings-gui",
+    "fmu-settings-api",
+    "fmu-settings-gui",
 ]
 
 [project.optional-dependencies]
