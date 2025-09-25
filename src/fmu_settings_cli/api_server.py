@@ -1,13 +1,11 @@
 """Functionality to start the API server."""
 
-import sys
-
 from fmu_settings_api import run_server
 
 from .constants import API_PORT, GUI_PORT, HOST
 
 
-def start_api_server(  # noqa PLR0913
+def start_api_server(  # noqa: PLR0913
     token: str,
     host: str = HOST,
     port: int = API_PORT,
@@ -36,5 +34,4 @@ def start_api_server(  # noqa PLR0913
             reload=reload,
         )
     except Exception as e:
-        print(f"Could not start API server: {e}")
-        sys.exit(1)
+        raise RuntimeError(f"Could not start API server: {e}") from e
