@@ -1,7 +1,8 @@
 """Tests for api_server.py."""
 
-import socket
 from unittest.mock import patch
+
+import pytest
 
 from fmu_settings_cli.__main__ import generate_auth_token
 from fmu_settings_cli.api_server import start_api_server
@@ -20,10 +21,9 @@ def test_start_api_server_fails() -> None:
     token = generate_auth_token()
     with (
         patch(
-            "fmu_settings_cli.api_server.run_server", side_effect=socket.error
+            "fmu_settings_cli.api_server.run_server", side_effect=OSError("fail")
         ) as mock_run_server,
-        patch("fmu_settings_cli.api_server.sys.exit") as mock_sys_exit,
+        pytest.raises(RuntimeError, match="Could not start API server: fail"),
     ):
         start_api_server(token)
         mock_run_server.assert_called_once()
-        mock_sys_exit.assert_called_once()
