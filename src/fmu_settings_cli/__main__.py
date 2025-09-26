@@ -2,14 +2,13 @@
 
 import argparse
 import contextlib
-import hashlib
 import os
-import secrets
 import signal
 import sys
 import webbrowser
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+from ._utils import create_authorized_url, ensure_port, generate_auth_token
 from .api_server import start_api_server
 from .constants import API_PORT, GUI_PORT, HOST
 from .gui_server import start_gui_server
@@ -118,27 +117,10 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def generate_auth_token() -> str:
-    """Generates an authentication token.
-
-    This token is used to validate requests between the API and the GUI.
-
-    Returns:
-        A 256-bit token
-    """
-    random_bytes = secrets.token_hex(32)
-    return hashlib.sha256(random_bytes.encode()).hexdigest()
-
-
-def init_worker() -> None:
+def init_worker() -> None:  # pragma: no cover
     """Initializer to ignore signal interrupts on workers."""
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
-
-
-def create_authorized_url(token: str, host: str, gui_port: int) -> str:
-    """Creates the authorized URL a user will be directed to."""
-    return f"http://{host}:{gui_port}/#token={token}"
 
 
 def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
@@ -256,6 +238,7 @@ def main(test_args: list[str] | None = None) -> None:
                     "Authorized URL:",
                     create_authorized_url(token, args.gui_host, args.gui_port),
                 )
+            ensure_port(args.port)
             start_api_server(
                 token,
                 host=args.host,
@@ -265,10 +248,13 @@ def main(test_args: list[str] | None = None) -> None:
                 reload=args.reload,
             )
         case "gui":
+            ensure_port(args.port)
             start_gui_server(token, host=args.host, port=args.port)
         case _:
+            for port in [args.api_port, args.gui_port]:
+                ensure_port(port)
             start_api_and_gui(token, args)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

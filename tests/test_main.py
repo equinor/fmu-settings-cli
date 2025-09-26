@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from time import sleep
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -12,11 +12,11 @@ from pytest import CaptureFixture
 
 from fmu_settings_cli.__main__ import (
     _parse_args,
-    generate_auth_token,
     init_worker,
     main,
     start_api_and_gui,
 )
+from fmu_settings_cli._utils import generate_auth_token
 from fmu_settings_cli.constants import API_PORT, GUI_PORT
 
 
@@ -28,31 +28,29 @@ def test_parse_args_no_input() -> None:
     assert args.port == expected
 
 
-def test_main_invocation_with_no_options() -> None:
+def test_main_invocation_with_no_options(patch_ensure_port: Generator[None]) -> None:
     """Tests that fmu-settings calls 'start_api_and_gui'."""
     with patch("fmu_settings_cli.__main__.start_api_and_gui") as mock_start_api_and_gui:
         main([])
         mock_start_api_and_gui.assert_called_once()
 
 
-def test_main_invocation_with_api_subcommand() -> None:
+def test_main_invocation_with_api_subcommand(
+    patch_ensure_port: Generator[None],
+) -> None:
     """Tests that fmu-settings calls 'start_api_and_gui'."""
     with patch("fmu_settings_cli.__main__.start_api_server") as mock_start_api_server:
         main(["api"])
         mock_start_api_server.assert_called_once()
 
 
-def test_main_invocation_with_gui_subcommand() -> None:
+def test_main_invocation_with_gui_subcommand(
+    patch_ensure_port: Generator[None],
+) -> None:
     """Tests that fmu-settings calls 'start_api_and_gui'."""
     with patch("fmu_settings_cli.__main__.start_gui_server") as mock_start_gui_server:
         main(["gui"])
         mock_start_gui_server.assert_called_once()
-
-
-def test_generate_auth_token() -> None:
-    """Tests generating an authentication token."""
-    assert len(generate_auth_token()) == 64  # noqa
-    assert generate_auth_token() != generate_auth_token() != generate_auth_token()
 
 
 def test_start_api_and_gui_processes(default_args: argparse.Namespace) -> None:
