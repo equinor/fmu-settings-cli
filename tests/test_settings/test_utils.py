@@ -6,13 +6,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fmu_settings_cli._utils import (
+from fmu_settings_cli.settings._utils import (
     create_authorized_url,
     ensure_port,
     generate_auth_token,
     get_process_on_port,
 )
-from fmu_settings_cli.constants import INVALID_PID
+from fmu_settings_cli.settings.constants import INVALID_PID
 
 
 def test_generate_auth_token() -> None:
@@ -94,7 +94,7 @@ def test_get_process_on_port_subprocess_fails(mock_run: MagicMock) -> None:
     assert result == (INVALID_PID, "Error")
 
 
-@patch("fmu_settings_cli._utils.get_process_on_port")
+@patch("fmu_settings_cli.settings._utils.get_process_on_port")
 def test_ensure_port_does_nothing_if_invalid_pid(mock_get_process: MagicMock) -> None:
     """Tests the valid, success case of ensure_port()."""
     mock_get_process.return_value = (INVALID_PID, "Error")
@@ -102,7 +102,7 @@ def test_ensure_port_does_nothing_if_invalid_pid(mock_get_process: MagicMock) ->
     ensure_port(8000)
 
 
-@patch("fmu_settings_cli._utils.get_process_on_port")
+@patch("fmu_settings_cli.settings._utils.get_process_on_port")
 def test_ensure_port_sys_exits_if_port_in_use(mock_get_process: MagicMock) -> None:
     """Tests the valid, success case of ensure_port()."""
     mock_get_process.return_value = (1234, "python3")
