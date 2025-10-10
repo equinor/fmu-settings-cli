@@ -48,7 +48,7 @@ Repository = "https://github.com/equinor/fmu-settings-cli"
 Documentation = "https://github.com/equinor/fmu-settings-cli"
 
 [project.scripts]
-fmu-settings = "fmu_settings_cli.__main__:main"
+fmu = "fmu_settings_cli.__main__:main"
 
 [tool.coverage.run]
 omit = [

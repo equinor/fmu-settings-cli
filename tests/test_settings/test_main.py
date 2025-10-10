@@ -12,44 +12,52 @@ from pytest import CaptureFixture
 
 from fmu_settings_cli.__main__ import (
     _parse_args,
-    init_worker,
     main,
+)
+from fmu_settings_cli.settings._utils import generate_auth_token
+from fmu_settings_cli.settings.constants import API_PORT, GUI_PORT
+from fmu_settings_cli.settings.main import (
+    init_worker,
     start_api_and_gui,
 )
-from fmu_settings_cli._utils import generate_auth_token
-from fmu_settings_cli.constants import API_PORT, GUI_PORT
 
 
 def test_parse_args_no_input() -> None:
     """Tests that parse_args falls back to sys.argv."""
     expected = 9999
-    with patch.object(sys, "argv", ["fmu-settings", "api", "--port", str(expected)]):
+    with patch.object(sys, "argv", ["fmu", "settings", "api", "--port", str(expected)]):
         args = _parse_args()
     assert args.port == expected
 
 
 def test_main_invocation_with_no_options(patch_ensure_port: Generator[None]) -> None:
-    """Tests that fmu-settings calls 'start_api_and_gui'."""
-    with patch("fmu_settings_cli.__main__.start_api_and_gui") as mock_start_api_and_gui:
-        main([])
+    """Tests that 'fmu settings' calls 'start_api_and_gui'."""
+    with patch(
+        "fmu_settings_cli.settings.main.start_api_and_gui"
+    ) as mock_start_api_and_gui:
+        main(["settings"])
         mock_start_api_and_gui.assert_called_once()
 
 
 def test_main_invocation_with_api_subcommand(
     patch_ensure_port: Generator[None],
 ) -> None:
-    """Tests that fmu-settings calls 'start_api_and_gui'."""
-    with patch("fmu_settings_cli.__main__.start_api_server") as mock_start_api_server:
-        main(["api"])
+    """Tests that 'fmu settings api' calls 'start_api_server'."""
+    with patch(
+        "fmu_settings_cli.settings.main.start_api_server"
+    ) as mock_start_api_server:
+        main(["settings", "api"])
         mock_start_api_server.assert_called_once()
 
 
 def test_main_invocation_with_gui_subcommand(
     patch_ensure_port: Generator[None],
 ) -> None:
-    """Tests that fmu-settings calls 'start_api_and_gui'."""
-    with patch("fmu_settings_cli.__main__.start_gui_server") as mock_start_gui_server:
-        main(["gui"])
+    """Tests that 'fmu settings gui' calls 'start_gui_server'."""
+    with patch(
+        "fmu_settings_cli.settings.main.start_gui_server"
+    ) as mock_start_gui_server:
+        main(["settings", "gui"])
         mock_start_gui_server.assert_called_once()
 
 
@@ -58,11 +66,15 @@ def test_start_api_and_gui_processes(default_args: argparse.Namespace) -> None:
     token = generate_auth_token()
 
     with (
-        patch("fmu_settings_cli.__main__.ProcessPoolExecutor") as mock_executor,
-        patch("fmu_settings_cli.__main__.as_completed") as mock_as_completed,
-        patch("fmu_settings_cli.__main__.start_api_server") as mock_start_api_server,
-        patch("fmu_settings_cli.__main__.start_gui_server") as mock_start_gui_server,
-        patch("fmu_settings_cli.__main__.webbrowser.open") as mock_webbrowser_open,
+        patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
+        patch("fmu_settings_cli.settings.main.as_completed") as mock_as_completed,
+        patch(
+            "fmu_settings_cli.settings.main.start_api_server"
+        ) as mock_start_api_server,
+        patch(
+            "fmu_settings_cli.settings.main.start_gui_server"
+        ) as mock_start_gui_server,
+        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
     ):
         mock_executor_instance = MagicMock()
         # Patch over the ProcessPoolExecutor. This requires that objects submitted
@@ -119,10 +131,14 @@ def test_keyboard_interrupt_in_process_executor(
     """Tests that a KeyboardInterrupt issue sthe correct message."""
     token = generate_auth_token()
     with (
-        patch("fmu_settings_cli.__main__.ProcessPoolExecutor") as mock_executor,
-        patch("fmu_settings_cli.__main__.start_api_server") as mock_start_api_server,
-        patch("fmu_settings_cli.__main__.start_gui_server") as mock_start_gui_server,
-        patch("fmu_settings_cli.__main__.webbrowser.open") as mock_webbrowser_open,
+        patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
+        patch(
+            "fmu_settings_cli.settings.main.start_api_server"
+        ) as mock_start_api_server,
+        patch(
+            "fmu_settings_cli.settings.main.start_gui_server"
+        ) as mock_start_gui_server,
+        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
     ):
         mock_start_api_server.side_effect = lambda *args, **kwargs: None
         mock_start_gui_server.side_effect = lambda *args, **kwargs: None
@@ -187,15 +203,15 @@ def test_monitor_api_or_gui_server_system_exits(
     # These must be wrapped in lambdas for pickling.
     with (
         patch(
-            "fmu_settings_cli.__main__.start_api_server",
+            "fmu_settings_cli.settings.main.start_api_server",
             new_callable=lambda *args, **kwargs: api_fn,
         ),
         patch(
-            "fmu_settings_cli.__main__.start_gui_server",
+            "fmu_settings_cli.settings.main.start_gui_server",
             new_callable=lambda *args, **kwargs: gui_fn,
         ),
         patch(
-            "fmu_settings_cli.__main__.webbrowser.open",
+            "fmu_settings_cli.settings.main.webbrowser.open",
             new_callable=lambda *args, **kwargs: _return_true,
         ),
     ):
@@ -222,15 +238,15 @@ def test_monitor_api_or_gui_server_exits_unexpectedly(
     # These must be wrapped in lambdas for pickling.
     with (
         patch(
-            "fmu_settings_cli.__main__.start_api_server",
+            "fmu_settings_cli.settings.main.start_api_server",
             new_callable=lambda *args, **kwargs: api_fn,
         ),
         patch(
-            "fmu_settings_cli.__main__.start_gui_server",
+            "fmu_settings_cli.settings.main.start_gui_server",
             new_callable=lambda *args, **kwargs: gui_fn,
         ),
         patch(
-            "fmu_settings_cli.__main__.webbrowser.open",
+            "fmu_settings_cli.settings.main.webbrowser.open",
             new_callable=lambda *args, **kwargs: _return_true,
         ),
     ):
@@ -261,15 +277,15 @@ def test_monitor_api_or_gui_server_raises_exception(
     # These must be wrapped in lambdas for pickling.
     with (
         patch(
-            "fmu_settings_cli.__main__.start_api_server",
+            "fmu_settings_cli.settings.main.start_api_server",
             new_callable=lambda *args, **kwargs: api_fn,
         ),
         patch(
-            "fmu_settings_cli.__main__.start_gui_server",
+            "fmu_settings_cli.settings.main.start_gui_server",
             new_callable=lambda *args, **kwargs: gui_fn,
         ),
         patch(
-            "fmu_settings_cli.__main__.webbrowser.open",
+            "fmu_settings_cli.settings.main.webbrowser.open",
             new_callable=lambda *args, **kwargs: _return_true,
         ),
     ):
