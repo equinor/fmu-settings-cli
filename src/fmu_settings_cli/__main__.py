@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from fmu_settings_cli import settings
+from fmu_settings_cli import init, settings
 
 
 def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
@@ -15,7 +15,9 @@ def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
     )
 
     cmd_parser = parser.add_subparsers(dest="command", help="Command to run")
+
     settings.add_parser(cmd_parser)
+    init.add_parser(cmd_parser)
 
     return parser.parse_args(args)
 
@@ -27,6 +29,8 @@ def main(test_args: list[str] | None = None) -> None:
     match args.command:
         case settings.CMD:
             settings.run(args)
+        case init.CMD:
+            init.run(args)
 
 
 if __name__ == "__main__":  # pragma: no cover
