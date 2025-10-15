@@ -14,6 +14,7 @@ from fmu_settings_cli.__main__ import (
     _parse_args,
     main,
 )
+from fmu_settings_cli.settings import CMD
 from fmu_settings_cli.settings._utils import generate_auth_token
 from fmu_settings_cli.settings.constants import API_PORT, GUI_PORT
 from fmu_settings_cli.settings.main import (
@@ -27,6 +28,7 @@ def test_parse_args_no_input() -> None:
     expected = 9999
     with patch.object(sys, "argv", ["fmu", "settings", "api", "--port", str(expected)]):
         args = _parse_args()
+    assert args.command == CMD
     assert args.port == expected
 
 

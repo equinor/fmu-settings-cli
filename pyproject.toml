@@ -28,6 +28,8 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
+    "fmu-datamodels",
+    "fmu-settings",
     "fmu-settings-api",
     "fmu-settings-gui",
 ]
@@ -40,6 +42,8 @@ dev = [
     "pytest-mock",
     "pytest-xdist",
     "ruff",
+    "PyYAML",
+    "types-PyYAML",
 ]
 
 [project.urls]
