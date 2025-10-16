@@ -136,9 +136,8 @@ def test_init_looks_for_global_config(in_fmu_project: Path) -> None:
 def test_init_adds_global_variables_without_masterdata(
     in_fmu_project: Path, global_variables_without_masterdata: dict[str, Any]
 ) -> None:
-    """Tests that 'fmu init' does not add masterdata if it does not exist."""
+    """Tests that 'fmu init' fails creating a .fmu if the config has no masterdata."""
     tmp_path = in_fmu_project
-    print(tmp_path)
     fmuconfig_out = tmp_path / "fmuconfig/output"
     fmuconfig_out.mkdir(parents=True, exist_ok=True)
 
@@ -148,11 +147,12 @@ def test_init_adds_global_variables_without_masterdata(
 
     with (
         patch.object(sys, "argv", ["fmu", "init"]),
-        pytest.raises(SystemExit, match="0"),
+        pytest.raises(SystemExit, match="1"),
     ):
         main()
-    fmu_dir = find_nearest_fmu_directory()
-    assert fmu_dir.config.load().masterdata is None
+
+    with pytest.raises(FileNotFoundError):
+        find_nearest_fmu_directory()
 
 
 def test_init_adds_global_variables_with_masterdata(
