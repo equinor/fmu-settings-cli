@@ -2,6 +2,8 @@
 
 from fmu_settings_gui import run_server
 
+from fmu_settings_cli.prints import info
+
 from .constants import APP_REG_PORTS, GUI_PORT, HOST
 
 
@@ -28,7 +30,7 @@ def start_gui_server(
         )
 
     try:
-        print(f"Starting FMU Settings GUI server on {host}:{port}...")
+        info(f"Starting FMU Settings GUI server on {host}:{port} ...")
         run_server(host, port)
     except Exception as e:
         raise RuntimeError(f"Could not start GUI server: {e}") from e

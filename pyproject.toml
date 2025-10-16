@@ -32,6 +32,8 @@ dependencies = [
     "fmu-settings",
     "fmu-settings-api",
     "fmu-settings-gui",
+    "rich",
+    "typer",
 ]
 
 [project.optional-dependencies]

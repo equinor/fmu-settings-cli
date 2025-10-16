@@ -1,5 +1,5 @@
 """The 'settings' command."""
 
-from .main import CMD, add_parser, run
+from .main import settings_app
 
-__all__ = ["add_parser", "run", "CMD"]
+__all__ = ["settings_app"]

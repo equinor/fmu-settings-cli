@@ -2,6 +2,8 @@
 
 from fmu_settings_api import run_server
 
+from fmu_settings_cli.prints import info
+
 from .constants import API_PORT, GUI_PORT, HOST
 
 
@@ -24,7 +26,7 @@ def start_api_server(  # noqa: PLR0913
         reload: Auto-reload the API. Default False.
     """
     try:
-        print(f"Starting FMU Settings API server on {host}:{port}...")
+        info(f"Starting FMU Settings API server on {host}:{port} ...")
         run_server(
             token=token,
             host=host,

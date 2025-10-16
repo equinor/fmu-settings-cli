@@ -1,6 +1,5 @@
 """Tests for the __main__ module."""
 
-import argparse
 import sys
 from collections.abc import Callable, Generator
 from time import sleep
@@ -10,11 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pytest import CaptureFixture
 
-from fmu_settings_cli.__main__ import (
-    _parse_args,
-    main,
-)
-from fmu_settings_cli.settings import CMD
+from fmu_settings_cli.__main__ import main
 from fmu_settings_cli.settings._utils import generate_auth_token
 from fmu_settings_cli.settings.constants import API_PORT, GUI_PORT
 from fmu_settings_cli.settings.main import (
@@ -23,21 +18,17 @@ from fmu_settings_cli.settings.main import (
 )
 
 
-def test_parse_args_no_input() -> None:
-    """Tests that parse_args falls back to sys.argv."""
-    expected = 9999
-    with patch.object(sys, "argv", ["fmu", "settings", "api", "--port", str(expected)]):
-        args = _parse_args()
-    assert args.command == CMD
-    assert args.port == expected
-
-
-def test_main_invocation_with_no_options(patch_ensure_port: Generator[None]) -> None:
+def test_main_invocation_with_no_options(
+    default_settings_args: dict[str, Any], patch_ensure_port: Generator[None]
+) -> None:
     """Tests that 'fmu settings' calls 'start_api_and_gui'."""
-    with patch(
-        "fmu_settings_cli.settings.main.start_api_and_gui"
-    ) as mock_start_api_and_gui:
-        main(["settings"])
+    with (
+        patch(
+            "fmu_settings_cli.settings.main.start_api_and_gui"
+        ) as mock_start_api_and_gui,
+        pytest.raises(SystemExit, match="0"),
+    ):
+        main()
         mock_start_api_and_gui.assert_called_once()
 
 
@@ -45,10 +36,14 @@ def test_main_invocation_with_api_subcommand(
     patch_ensure_port: Generator[None],
 ) -> None:
     """Tests that 'fmu settings api' calls 'start_api_server'."""
-    with patch(
-        "fmu_settings_cli.settings.main.start_api_server"
-    ) as mock_start_api_server:
-        main(["settings", "api"])
+    with (
+        patch.object(sys, "argv", ["fmu", "settings", "api"]),
+        patch(
+            "fmu_settings_cli.settings.main.start_api_server"
+        ) as mock_start_api_server,
+        pytest.raises(SystemExit, match="0"),
+    ):
+        main()
         mock_start_api_server.assert_called_once()
 
 
@@ -56,14 +51,18 @@ def test_main_invocation_with_gui_subcommand(
     patch_ensure_port: Generator[None],
 ) -> None:
     """Tests that 'fmu settings gui' calls 'start_gui_server'."""
-    with patch(
-        "fmu_settings_cli.settings.main.start_gui_server"
-    ) as mock_start_gui_server:
-        main(["settings", "gui"])
+    with (
+        patch.object(sys, "argv", ["fmu", "settings", "gui"]),
+        patch(
+            "fmu_settings_cli.settings.main.start_gui_server"
+        ) as mock_start_gui_server,
+        pytest.raises(SystemExit, match="0"),
+    ):
+        main()
         mock_start_gui_server.assert_called_once()
 
 
-def test_start_api_and_gui_processes(default_args: argparse.Namespace) -> None:
+def test_start_api_and_gui_processes(default_settings_args: Any) -> None:
     """Tests that all processes are submitted to the executor with expected args."""
     token = generate_auth_token()
 
@@ -97,28 +96,28 @@ def test_start_api_and_gui_processes(default_args: argparse.Namespace) -> None:
         mock_as_completed.return_value = iter([mock_api_future])
 
         # Whew. Start it up then do assertions.
-        start_api_and_gui(token, default_args)
+        start_api_and_gui(token, *default_settings_args.values())
 
         mock_executor.assert_called_once_with(max_workers=3, initializer=init_worker)
 
         mock_executor_instance.submit.assert_any_call(
             mock_start_api_server,
             token,
-            host=default_args.host,
-            port=default_args.api_port,
-            frontend_host=default_args.host,
-            frontend_port=default_args.gui_port,
-            reload=default_args.reload,
+            host=default_settings_args["host"],
+            port=default_settings_args["api_port"],
+            frontend_host=default_settings_args["host"],
+            frontend_port=default_settings_args["gui_port"],
+            reload=default_settings_args["reload"],
         )
         mock_executor_instance.submit.assert_any_call(
             mock_start_gui_server,
             token,
-            host=default_args.host,
-            port=default_args.gui_port,
+            host=default_settings_args["host"],
+            port=default_settings_args["gui_port"],
         )
         mock_executor_instance.submit.assert_any_call(
             mock_webbrowser_open,
-            f"http://{default_args.host}:{default_args.gui_port}/#token={token}",
+            f"http://{default_settings_args['host']}:{default_settings_args['gui_port']}/#token={token}",
         )
 
         mock_browser_future.result.assert_called_once()
@@ -128,7 +127,7 @@ def test_start_api_and_gui_processes(default_args: argparse.Namespace) -> None:
 
 
 def test_keyboard_interrupt_in_process_executor(
-    default_args: argparse.Namespace, capsys: CaptureFixture[str]
+    default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
 ) -> None:
     """Tests that a KeyboardInterrupt issue sthe correct message."""
     token = generate_auth_token()
@@ -160,10 +159,11 @@ def test_keyboard_interrupt_in_process_executor(
             mock_browser_future,
         ]
 
-        start_api_and_gui(token, default_args)
-        captured = capsys.readouterr()
+        start_api_and_gui(token, *default_settings_args.values())
 
-        assert "\nShutting down FMU Settings..." in captured.out
+    captured = capsys.readouterr()
+    stdout = captured.out.replace("\n", " ").replace("  ", " ")
+    assert "Shutting down FMU Settings ..." in stdout
 
 
 def _bad_exit_early(*args: Any, **kwargs: Any) -> None:
@@ -192,7 +192,7 @@ def _return_true(*args: Any, **kwargs: Any) -> bool:
     [("GUI", _wait, _bad_exit_early), ("API", _bad_exit_early, _wait)],
 )
 def test_monitor_api_or_gui_server_system_exits(
-    default_args: argparse.Namespace,
+    default_settings_args: dict[str, Any],
     capsys: CaptureFixture[str],
     failed_service: str,
     gui_fn: Callable[[Any], None],
@@ -217,10 +217,12 @@ def test_monitor_api_or_gui_server_system_exits(
             new_callable=lambda *args, **kwargs: _return_true,
         ),
     ):
-        start_api_and_gui(token, default_args)
-        captured = capsys.readouterr()
-        assert f"Error: {failed_service} exited with exit code 1." in captured.err
-        assert f"port {required_port}" in captured.err
+        start_api_and_gui(token, *default_settings_args.values())
+
+    captured = capsys.readouterr()
+    stderr = captured.err.replace("\n", " ").replace("  ", " ")
+    assert f"Error: {failed_service} exited with exit code 1." in stderr
+    assert f"port {required_port}" in stderr
 
 
 @pytest.mark.parametrize(
@@ -228,7 +230,7 @@ def test_monitor_api_or_gui_server_system_exits(
     [("GUI", _wait, _return_true), ("API", _return_true, _wait)],
 )
 def test_monitor_api_or_gui_server_exits_unexpectedly(
-    default_args: argparse.Namespace,
+    default_settings_args: dict[str, Any],
     capsys: CaptureFixture[str],
     failed_service: str,
     gui_fn: Callable[[Any], None],
@@ -252,9 +254,11 @@ def test_monitor_api_or_gui_server_exits_unexpectedly(
             new_callable=lambda *args, **kwargs: _return_true,
         ),
     ):
-        start_api_and_gui(token, default_args)
-        captured = capsys.readouterr()
-        assert f"Error: {failed_service} unexpectedly exited." in captured.err
+        start_api_and_gui(token, *default_settings_args.values())
+
+    captured = capsys.readouterr()
+    stderr = captured.err.replace("\n", " ").replace("  ", " ")
+    assert f"Error: {failed_service} unexpectedly exited." in stderr
 
 
 def _raises_exception(*args: Any, **kwargs: Any) -> None:
@@ -267,7 +271,7 @@ def _raises_exception(*args: Any, **kwargs: Any) -> None:
     [("GUI", _wait, _raises_exception), ("API", _raises_exception, _wait)],
 )
 def test_monitor_api_or_gui_server_raises_exception(
-    default_args: argparse.Namespace,
+    default_settings_args: dict[str, Any],
     capsys: CaptureFixture[str],
     failed_service: str,
     gui_fn: Callable[[Any], None],
@@ -291,6 +295,8 @@ def test_monitor_api_or_gui_server_raises_exception(
             new_callable=lambda *args, **kwargs: _return_true,
         ),
     ):
-        start_api_and_gui(token, default_args)
-        captured = capsys.readouterr()
-        assert f"Error: {failed_service} failed with: foo" in captured.err
+        start_api_and_gui(token, *default_settings_args.values())
+
+    captured = capsys.readouterr()
+    stderr = captured.err.replace("\n", " ")
+    assert f"Error: {failed_service} failed with: foo" in stderr

@@ -1,36 +1,24 @@
 """The main entry point for fmu-settings-cli."""
 
-import argparse
-import sys
+import typer
 
-from fmu_settings_cli import init, settings
+from .init import init_cmd
+from .settings import settings_app
 
+app = typer.Typer(
+    name="fmu",
+    help="FMU Settings - Manage your FMU project",
+    add_completion=True,
+    no_args_is_help=True,
+)
 
-def _parse_args(args: list[str] | None = None) -> argparse.Namespace:
-    if args is None:
-        args = sys.argv[1:]
-
-    parser = argparse.ArgumentParser(
-        description="FMU Settings - Manage your FMU project's settings"
-    )
-
-    cmd_parser = parser.add_subparsers(dest="command", help="Command to run")
-
-    settings.add_parser(cmd_parser)
-    init.add_parser(cmd_parser)
-
-    return parser.parse_args(args)
+app.add_typer(init_cmd, name="init")
+app.add_typer(settings_app, name="settings")
 
 
-def main(test_args: list[str] | None = None) -> None:
+def main() -> None:
     """The main entry point."""
-    args = _parse_args(test_args)
-
-    match args.command:
-        case settings.CMD:
-            settings.run(args)
-        case init.CMD:
-            init.run(args)
+    app()
 
 
 if __name__ == "__main__":  # pragma: no cover
