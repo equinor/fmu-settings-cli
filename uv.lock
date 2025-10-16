@@ -196,7 +196,7 @@ wheels = [
 
 [[package]]
 name = "fmu-settings"
-version = "0.5.0"
+version = "0.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
@@ -205,9 +205,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e5/66/b83bd5406aafc8fbfbfaeb86d954b1ceff48d3eb3c97e671455658d3995a/fmu_settings-0.5.0.tar.gz", hash = "sha256:9140c1f7d3b66ccbd205c486b164375034dcbf88b8e2771469a69f6976753477", size = 47239, upload-time = "2025-10-16T08:05:11.211Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/04/8a/0c90598a45433cffb72aa3322bcd23c2542e483412644dbfc43b2153c0b6/fmu_settings-0.5.1.tar.gz", hash = "sha256:221d6d3a831c0858fe750ea52ea1c4f4d166f54b10303965fc746f6cf9aadd60", size = 47585, upload-time = "2025-10-16T11:18:35.883Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f3/37/5cf72f1a244312360495b257d4abb8e75dc075e452c9f5691e3a993a67bd/fmu_settings-0.5.0-py3-none-any.whl", hash = "sha256:839aea2dcd3d54e1e03225b8bbe27ce63b9b55513947ca057abaed69a8373d76", size = 33843, upload-time = "2025-10-16T08:05:10.086Z" },
+    { url = "https://files.pythonhosted.org/packages/50/ca/04cd603f46d02d8414c85b42817cd671ef72df9e72274e49489122e33913/fmu_settings-0.5.1-py3-none-any.whl", hash = "sha256:18e90ffaa33fffb656e82a4fae566930a2172b96f3f362d348782e15b48246f5", size = 33917, upload-time = "2025-10-16T11:18:34.832Z" },
 ]
 
 [[package]]

@@ -112,6 +112,7 @@ def test_ensure_port_sys_exits_if_port_in_use(
     with pytest.raises(typer.Abort):
         ensure_port(8000)
     captured = capsys.readouterr()
-    assert "port 8000" in captured.err
-    assert "PID: 1234" in captured.err
-    assert "command: python3" in captured.err
+    stderr = captured.err.replace("\n", " ").replace("  ", " ")
+    assert "port 8000" in stderr
+    assert "PID: 1234" in stderr
+    assert "command: python3" in stderr

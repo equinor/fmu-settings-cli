@@ -10,9 +10,10 @@ from fmu.settings._global_config import (
     find_global_config,
 )
 from fmu.settings._init import init_fmu_directory, init_user_fmu_directory
+from pydantic import ValidationError
 from rich.table import Table
 
-from fmu_settings_cli.prints import error
+from fmu_settings_cli.prints import error, validation_error
 
 if TYPE_CHECKING:
     from fmu.datamodels.fmu_results.global_configuration import GlobalConfiguration
@@ -96,6 +97,18 @@ def init(
     if not skip_config_import:
         try:
             global_config = find_global_config(cwd)
+        except ValidationError as e:
+            validation_error(
+                e,
+                "Unable to import existing masterdata.",
+                reason="Validation of the global config/global variables failed.",
+                suggestion=(
+                    "Skip importing by running 'fmu init --skip-config-import' to "
+                    "proceed. You will need to establish valid SMDA masterdata in FMU "
+                    "Settings by running and opening 'fmu settings'."
+                ),
+            )
+            raise typer.Abort from e
         except InvalidGlobalConfigurationError as e:
             error(
                 "Unable to import existing masterdata.",
