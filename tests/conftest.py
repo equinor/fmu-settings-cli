@@ -1,6 +1,5 @@
 """Root configuration for pytest."""
 
-import argparse
 import sys
 from collections.abc import Callable, Generator
 from pathlib import Path
@@ -19,15 +18,20 @@ from fmu.datamodels.fmu_results.global_configuration import (
 )
 from pytest import MonkeyPatch
 
-from fmu_settings_cli.__main__ import _parse_args
 from fmu_settings_cli.init.main import REQUIRED_FMU_PROJECT_SUBDIRS
+from fmu_settings_cli.settings import constants
 
 
 @pytest.fixture
-def default_args() -> argparse.Namespace:
+def default_settings_args() -> Generator[dict[str, Any]]:
     """Returns default arguments when running `fmu-settings`."""
     with patch.object(sys, "argv", ["fmu", "settings"]):
-        return _parse_args()
+        yield {
+            "api_port": constants.API_PORT,
+            "gui_port": constants.GUI_PORT,
+            "host": constants.HOST,
+            "reload": False,
+        }
 
 
 @pytest.fixture

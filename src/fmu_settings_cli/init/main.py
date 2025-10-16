@@ -1,50 +1,29 @@
 """The 'init' command."""
 
-import argparse
 import contextlib
-import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Annotated, Final
 
-from fmu.settings._global_config import find_global_config
+import typer
+from fmu.settings._global_config import (
+    InvalidGlobalConfigurationError,
+    find_global_config,
+)
 from fmu.settings._init import init_fmu_directory, init_user_fmu_directory
+from rich.table import Table
 
-from fmu_settings_cli.types import SubparserType
+from fmu_settings_cli.prints import error
 
 if TYPE_CHECKING:
     from fmu.datamodels.fmu_results.global_configuration import GlobalConfiguration
 
-CMD: Final[str] = "init"
+
+init_cmd = typer.Typer(
+    help="Initialize a .fmu directory in this directory if it contains an FMU model.",
+    add_completion=True,
+)
 
 REQUIRED_FMU_PROJECT_SUBDIRS: Final[list[str]] = ["ert"]
-
-
-def add_parser(cmd_parser: SubparserType) -> argparse.ArgumentParser:
-    """Add the subparser for this command."""
-    parser = cmd_parser.add_parser(
-        CMD,
-        help=(
-            "Initialize a .fmu directory in the current FMU project revision directory."
-        ),
-    )
-
-    parser.add_argument(
-        "--skip-config-import",
-        action="store_true",
-        default=False,
-        help=(
-            "Skip searching for and importing masterdata set in the global "
-            "configuration or global variables."
-        ),
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        default=False,
-        help="Skip validating that we are creating this in the right place.",
-    )
-
-    return parser
 
 
 def is_fmu_project(path: Path) -> tuple[bool, list[str]]:
@@ -67,34 +46,66 @@ def is_fmu_project(path: Path) -> tuple[bool, list[str]]:
     return len(missing) == 0, missing
 
 
-def run(args: argparse.Namespace) -> None:
+@init_cmd.callback(invoke_without_command=True)
+def init(
+    ctx: typer.Context,
+    force: Annotated[
+        bool,
+        typer.Option(
+            "--force",
+            help="Skip validating that we are creating this in the right place.",
+            show_default=False,
+        ),
+    ] = False,
+    skip_config_import: Annotated[
+        bool,
+        typer.Option(
+            "--skip-config-import",
+            help=(
+                "Skip searching for and importing masterdata set in the global "
+                "configuration or global variables."
+            ),
+            show_default=False,
+        ),
+    ] = False,
+) -> None:
     """The main entry point for the init command."""
+    if ctx.invoked_subcommand is not None:
+        return
+
     with contextlib.suppress(FileExistsError):
         init_user_fmu_directory()
 
     cwd = Path.cwd()
 
-    if not args.force:
+    if not force:
         has_all_fmu_subdirs, missing_dirs = is_fmu_project(cwd)
         if not has_all_fmu_subdirs:
-            dirs_list = "\n - ".join(missing_dirs)
-            sys.exit(
-                f"Error: This directory ({cwd}) does not appear to be an FMU project. "
-                "Expected the following directories:"
-                f"\n - {dirs_list}",
+            dirs_table = Table("Directory")
+            for dir_ in missing_dirs:
+                dirs_table.add_row(dir_)
+
+            error(
+                f"This directory ({cwd}) does not appear to be an FMU project. "
+                "Expected the following directories:",
+                dirs_table,
             )
+            raise typer.Abort
 
     global_config: GlobalConfiguration | None = None
-    if not args.skip_config_import:
+    if not skip_config_import:
         try:
             global_config = find_global_config(cwd)
-        except ValueError as e:
-            sys.exit(
-                f"Error: Unable to import existing masterdata."
-                f"\n - Reason: {e}\n\n"
-                "Skip importing by running 'fmu init --skip-config-import' to proceed. "
-                "You will need to establish valid SMDA masterdata in FMU Settings by "
-                "running and opening 'fmu settings'."
+        except InvalidGlobalConfigurationError as e:
+            error(
+                "Unable to import existing masterdata.",
+                reason=str(e),
+                suggestion=(
+                    "Skip importing by running 'fmu init --skip-config-import' to "
+                    "proceed. You will need to establish valid SMDA masterdata in FMU "
+                    "Settings by running and opening 'fmu settings'."
+                ),
             )
+            raise typer.Abort from e
 
     init_fmu_directory(cwd, global_config=global_config)

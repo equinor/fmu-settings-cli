@@ -1,10 +1,11 @@
 """Tests for the simple utility functions in _utils.py."""
 
-import re
 import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
+import typer
+from pytest import CaptureFixture
 
 from fmu_settings_cli.settings._utils import (
     create_authorized_url,
@@ -103,11 +104,14 @@ def test_ensure_port_does_nothing_if_invalid_pid(mock_get_process: MagicMock) ->
 
 
 @patch("fmu_settings_cli.settings._utils.get_process_on_port")
-def test_ensure_port_sys_exits_if_port_in_use(mock_get_process: MagicMock) -> None:
+def test_ensure_port_sys_exits_if_port_in_use(
+    mock_get_process: MagicMock, capsys: CaptureFixture[str]
+) -> None:
     """Tests the valid, success case of ensure_port()."""
     mock_get_process.return_value = (1234, "python3")
-    with pytest.raises(
-        SystemExit,
-        match=re.compile(r"port 8000.*?PID: 1234, command: python3", re.DOTALL),
-    ):
+    with pytest.raises(typer.Abort):
         ensure_port(8000)
+    captured = capsys.readouterr()
+    assert "port 8000" in captured.err
+    assert "PID: 1234" in captured.err
+    assert "command: python3" in captured.err

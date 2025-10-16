@@ -1,5 +1,5 @@
 """The 'init' command."""
 
-from .main import CMD, add_parser, run
+from .main import init_cmd
 
-__all__ = ["add_parser", "run", "CMD"]
+__all__ = ["init_cmd"]

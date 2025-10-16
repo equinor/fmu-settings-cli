@@ -1,15 +1,14 @@
 """The 'settings' command."""
 
-import argparse
 import contextlib
-import os
 import signal
-import sys
 import webbrowser
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import Final
+from typing import Annotated
 
-from fmu_settings_cli.types import SubparserType
+import typer
+
+from fmu_settings_cli.prints import error, info, success
 
 from ._utils import (
     create_authorized_url,
@@ -20,107 +19,140 @@ from .api_server import start_api_server
 from .constants import API_PORT, GUI_PORT, HOST
 from .gui_server import start_gui_server
 
-CMD: Final[str] = "settings"
+settings_app = typer.Typer(
+    help="Start the FMU Settings application and manage your FMU model's settings.",
+    add_completion=True,
+)
 
 
-def add_parser(cmd_parser: SubparserType) -> argparse.ArgumentParser:
-    """Add the subparser for this command."""
-    parser = cmd_parser.add_parser(
-        CMD,
-        help="Start the FMU Settings application to manage your FMU project's setting",
-    )
-
-    parser.add_argument(
-        "--api-port",
-        type=int,
-        default=API_PORT,
-        help=f"Port to run the API on (default: {API_PORT})",
-    )
-    parser.add_argument(
-        "--gui-port",
-        type=int,
-        default=GUI_PORT,
-        help=f"Port to run the GUI on (default: {GUI_PORT})",
-    )
-    parser.add_argument(
-        "--host",
-        type=str,
-        default=HOST,
-        help=f"Host to bind the API and GUI servers to (default: {HOST})",
-    )
-    parser.add_argument(
-        "--reload",
-        action="store_true",
-        default=False,
-        help="Enable auto-reload for development",
-    )
-
-    subparsers = parser.add_subparsers(dest="subcommand", help="Subcommand to run")
-
-    # API subparser
-    api_parser = subparsers.add_parser("api", help="Start the API server")
-    api_parser.add_argument(
-        "--port",
-        type=int,
-        default=API_PORT,
-        help=f"Port to run the API on (default: {API_PORT})",
-    )
-    api_parser.add_argument(
-        "--host",
-        type=str,
-        default=HOST,
-        help=f"Host to bind the API server to (default: {HOST})",
-    )
-    api_parser.add_argument(
-        "--gui-host",
-        type=str,
-        default=HOST,
-        help="Host the GUI sends requests from. Sets the CORS host.",
-    )
-    api_parser.add_argument(
-        "--gui-port",
-        type=int,
-        default=GUI_PORT,
-        help="Port the GUI sends requests from. Sets the CORS port.",
-    )
-    api_parser.add_argument(
-        "--reload",
-        action="store_true",
-        default=False,
-        help="Enable auto-reload for development",
-    )
-    api_parser.add_argument(
-        "--print-token",
-        action="store_true",
-        help=(
-            "Prints the token the API requires for authorization. Used for development."
+@settings_app.command()
+def gui(
+    gui_port: Annotated[
+        int,
+        typer.Option("--gui-port", help="Port to run the GUI on.", show_default=True),
+    ] = GUI_PORT,
+    host: Annotated[
+        str,
+        typer.Option(
+            "--host",
+            help="Host to bind the API and GUI servers to.",
+            show_default=False,
         ),
-    )
-    api_parser.add_argument(
-        "--print-url",
-        action="store_true",
-        help=(
-            "Prints the authorized URL a user would be directed to. "
-            "Used for development."
+    ] = HOST,
+) -> None:
+    """Start the FMU Settings GUI only. Used for development."""
+    ensure_port(gui_port)
+    token = generate_auth_token()
+    start_gui_server(token, host=host, port=gui_port)
+
+
+@settings_app.command()
+def api(  # noqa: PLR0913
+    api_port: Annotated[
+        int,
+        typer.Option("--api-port", help="Port to run the API on.", show_default=True),
+    ] = API_PORT,
+    gui_port: Annotated[
+        int,
+        typer.Option("--gui-port", help="Port to run the GUI on.", show_default=True),
+    ] = GUI_PORT,
+    host: Annotated[
+        str,
+        typer.Option(
+            "--host",
+            help="Host to bind the API and GUI servers to.",
+            show_default=False,
         ),
+    ] = HOST,
+    reload: Annotated[
+        bool,
+        typer.Option(
+            "--reload",
+            help="Enable auto-reload. Used for development.",
+            show_default=False,
+        ),
+    ] = False,
+    print_token: Annotated[
+        bool,
+        typer.Option(
+            "--print-token",
+            help=(
+                "Prints the token the API requires for authorization. "
+                "Used for development."
+            ),
+            show_default=False,
+            envvar="FMU_SETTINGS_PRINT_TOKEN",
+        ),
+    ] = False,
+    print_url: Annotated[
+        bool,
+        typer.Option(
+            "--print-url",
+            help=(
+                "Prints the authorized URL a user would be directed to. "
+                "Used for development."
+            ),
+            show_default=False,
+            envvar="FMU_SETTINGS_PRINT_URL",
+        ),
+    ] = False,
+) -> None:
+    """Start the FMU Settings API only. Used for development."""
+    ensure_port(api_port)
+    token = generate_auth_token()
+
+    if print_token:
+        info("API Token:", token)
+    if print_url:
+        info("Authorized URL:", create_authorized_url(token, host, gui_port))
+
+    start_api_server(
+        token,
+        host=host,
+        port=api_port,
+        frontend_host=host,
+        frontend_port=gui_port,
+        reload=reload,
     )
 
-    # GUI subparser
-    gui_parser = subparsers.add_parser("gui", help="Start the GUI server")
-    gui_parser.add_argument(
-        "--port",
-        type=int,
-        default=GUI_PORT,
-        help=f"Port to run the GUI on (default: {GUI_PORT})",
-    )
-    gui_parser.add_argument(
-        "--host",
-        type=str,
-        default=HOST,
-        help=f"Host to bind the GUI server to (default: {HOST})",
-    )
 
-    return parser
+@settings_app.callback(invoke_without_command=True)
+def settings(
+    ctx: typer.Context,
+    api_port: Annotated[
+        int,
+        typer.Option("--api-port", help="Port to run the API on.", show_default=True),
+    ] = API_PORT,
+    gui_port: Annotated[
+        int,
+        typer.Option("--gui-port", help="Port to run the GUI on.", show_default=True),
+    ] = GUI_PORT,
+    host: Annotated[
+        str,
+        typer.Option(
+            "--host",
+            help="Host to bind the API and GUI servers to.",
+            show_default=False,
+        ),
+    ] = HOST,
+    reload: Annotated[
+        bool,
+        typer.Option(
+            "--reload",
+            help="Enable auto-reload. Used for development.",
+            show_default=False,
+        ),
+    ] = False,
+) -> None:
+    """The main entry point for the settings command."""
+    if ctx.invoked_subcommand is not None:
+        return
+
+    for port in [api_port, gui_port]:
+        ensure_port(port)
+
+    token = generate_auth_token()
+    start_api_and_gui(token, api_port, gui_port, host, reload)
 
 
 def init_worker() -> None:  # pragma: no cover
@@ -129,12 +161,17 @@ def init_worker() -> None:  # pragma: no cover
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
 
 
-def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
+def start_api_and_gui(
+    token: str, api_port: int, gui_port: int, host: str, reload: bool
+) -> None:
     """Starts both API and GUI as concurrent processes.
 
     Args:
         token: Authentication token shared to api and gui
-        args: The arguments taken in from invocation
+        api_port: The port the API will bind to
+        gui_port: The port the GUI will bind to
+        host: The host both the API and GUI will bind to
+        reload: If True, the API will reload on any code changes
     """
     with ProcessPoolExecutor(max_workers=3, initializer=init_worker) as executor:
         try:
@@ -142,17 +179,17 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
                 "api": executor.submit(
                     start_api_server,
                     token,
-                    host=args.host,
-                    port=args.api_port,
-                    frontend_host=args.host,
-                    frontend_port=args.gui_port,
-                    reload=args.reload,
+                    host=host,
+                    port=api_port,
+                    frontend_host=host,
+                    frontend_port=gui_port,
+                    reload=reload,
                 ),
                 "gui": executor.submit(
                     start_gui_server,
                     token,
-                    host=args.host,
-                    port=args.gui_port,
+                    host=host,
+                    port=gui_port,
                 ),
             }
 
@@ -161,7 +198,7 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
             # immediately.
             browser_future = executor.submit(
                 webbrowser.open,
-                create_authorized_url(token, args.host, args.gui_port),
+                create_authorized_url(token, host, gui_port),
             )
             browser_future.result()
 
@@ -180,27 +217,23 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
                             if f is completed_future
                         ).upper()
                         completed_future.result()
-                        print(
-                            f"Error: {service} unexpectedly exited. Please report this "
+                        error(
+                            f"{service} unexpectedly exited. Please report this "
                             "as a bug",
-                            file=sys.stderr,
                         )
                     except SystemExit as e:
                         # If a port is in use, uvicorn will raise a SystemExit as this
                         # is a fatal error. Unfortunately the exact message is emitted
                         # as an ERROR log statement, not inside the exception itself.
-                        required_port = (
-                            args.gui_port if service == "GUI" else args.api_port
-                        )
-                        print(
-                            f"Error: {service} exited with exit code {e}. Usually this "
-                            "means that another application is already using port "
-                            f"{required_port}.",
-                            file=sys.stderr,
+                        required_port = gui_port if service == "GUI" else api_port
+                        error(
+                            f"{service} exited with exit code {e}. Usually this "
+                            "means that another application is already using "
+                            f"port {required_port}.",
                         )
                     except Exception as e:
                         # This is the exception raised by start_[api, gui]_server
-                        print(f"Error: {service} failed with: {e}", file=sys.stderr)
+                        error(f"{service} failed with: {e}")
                     break
                 except Exception:
                     # This is the valid case, where the server future has not completed
@@ -209,12 +242,12 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
                     if is_start_up:
                         # Defer this message until we are certain GUI/API have started
                         # without initial errors.
-                        print("FMU Settings is running. Press CTRL+C to quit")
+                        success("FMU Settings is running. Press CTRL+C to quit")
                         is_start_up = False
                     continue
 
         except KeyboardInterrupt:
-            print("\nShutting down FMU Settings...")
+            info("Shutting down FMU Settings ...")
         finally:
             for future in server_futures.values():
                 future.cancel()
@@ -228,33 +261,3 @@ def start_api_and_gui(token: str, args: argparse.Namespace) -> None:
                     process.terminate()
 
             executor.shutdown(wait=False, cancel_futures=True)
-
-
-def run(args: argparse.Namespace) -> None:
-    """The main entry point for the settings command."""
-    token = generate_auth_token()
-
-    if args.subcommand == "api":
-        if args.print_token or os.getenv("FMU_SETTINGS_PRINT_TOKEN"):
-            print("API Token:", token)
-        if args.print_url or os.getenv("FMU_SETTINGS_PRINT_URL"):
-            print(
-                "Authorized URL:",
-                create_authorized_url(token, args.gui_host, args.gui_port),
-            )
-        ensure_port(args.port)
-        start_api_server(
-            token,
-            host=args.host,
-            port=args.port,
-            frontend_host=args.gui_host,
-            frontend_port=args.gui_port,
-            reload=args.reload,
-        )
-    elif args.subcommand == "gui":
-        ensure_port(args.port)
-        start_gui_server(token, host=args.host, port=args.port)
-    else:
-        for port in [args.api_port, args.gui_port]:
-            ensure_port(port)
-        start_api_and_gui(token, args)

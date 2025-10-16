@@ -3,7 +3,10 @@
 import hashlib
 import secrets
 import subprocess
-import sys
+
+import typer
+
+from fmu_settings_cli.prints import error
 
 from .constants import INVALID_PID
 
@@ -62,7 +65,8 @@ def ensure_port(port: int) -> None:
     if pid == INVALID_PID:
         return
 
-    sys.exit(
-        f"Error: fmu-settings requires port {port} but it is currently in use.\n\n"
-        f"Currently used by PID: {pid}, command: {process}"
+    error(
+        f"fmu-settings requires port {port} but it is currently in use.",
+        reason=f"Currently used by PID: {pid}, command: {process}",
     )
+    raise typer.Abort
