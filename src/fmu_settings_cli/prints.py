@@ -63,6 +63,39 @@ def validation_error(
         print(f"  [cyan]→[/cyan] {suggestion}", file=sys.stderr)
 
 
+def validation_warning(
+    e: ValidationError,
+    message: str = "Validation failed",
+    reason: str | None = None,
+    suggestion: str | None = None,
+) -> None:
+    """Prints warning messages specifically for Pydantic validation errors.
+
+    Args:
+        e: ValidationError raised by Pydantic.
+        message: General message to present as the error.
+        reason: Optional reason/explanation for the error
+        suggestion: Optional suggestion or additional info after the reason.
+    """
+    errors_text = []
+
+    for error in e.errors():
+        field = " → ".join(str(loc) for loc in error["loc"])
+        msg = error["msg"]
+        errors_text.append(f"[yellow]→[/yellow] [bold]{field}[/bold]: {msg}")
+
+    print("[bold dark_orange]Warning[/bold dark_orange]:", message, file=sys.stderr)
+
+    if reason:
+        print(f"  [dim]Reason:[/dim] {reason}", file=sys.stderr)
+
+    for error_line in errors_text:
+        print(f"  {error_line}", file=sys.stderr)
+
+    if suggestion:
+        print(f"  [cyan]→[/cyan] {suggestion}", file=sys.stderr)
+
+
 def success(
     *content: Any,
     reason: str | None = None,
@@ -123,10 +156,15 @@ def warning(
         suggestion: Optional suggestion or additional info after the reason
         **kwargs: Additional arguments to past to console.print().
     """
-    print("[bold dark_orange]Warning[/bold dark_orange]:", *content, **kwargs)
+    print(
+        "[bold dark_orange]Warning[/bold dark_orange]:",
+        *content,
+        **kwargs,
+        file=sys.stderr,
+    )
 
     if reason:
-        print(f"  [dim]Reason:[/dim] {reason}")
+        print(f"  [dim]Reason:[/dim] {reason}", file=sys.stderr)
 
     if suggestion:
-        print(f"  [cyan]→[/cyan] {suggestion}")
+        print(f"  [cyan]→[/cyan] {suggestion}", file=sys.stderr)

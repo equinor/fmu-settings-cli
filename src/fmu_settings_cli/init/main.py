@@ -13,7 +13,13 @@ from fmu.settings._init import init_fmu_directory, init_user_fmu_directory
 from pydantic import ValidationError
 from rich.table import Table
 
-from fmu_settings_cli.prints import error, validation_error
+from fmu_settings_cli.prints import (
+    error,
+    success,
+    validation_error,
+    validation_warning,
+    warning,
+)
 
 if TYPE_CHECKING:
     from fmu.datamodels.fmu_results.global_configuration import GlobalConfiguration
@@ -71,7 +77,7 @@ def init(
     ] = False,
 ) -> None:
     """The main entry point for the init command."""
-    if ctx.invoked_subcommand is not None:
+    if ctx.invoked_subcommand is not None:  # pragma: no cover
         return
 
     with contextlib.suppress(FileExistsError):
@@ -98,27 +104,56 @@ def init(
         try:
             global_config = find_global_config(cwd)
         except ValidationError as e:
-            validation_error(
+            validation_warning(
                 e,
-                "Unable to import existing masterdata.",
+                "Unable to import masterdata.",
                 reason="Validation of the global config/global variables failed.",
                 suggestion=(
-                    "Skip importing by running 'fmu init --skip-config-import' to "
-                    "proceed. You will need to establish valid SMDA masterdata in FMU "
+                    "You will need to establish valid SMDA masterdata in FMU "
                     "Settings by running and opening 'fmu settings'."
                 ),
             )
-            raise typer.Abort from e
         except InvalidGlobalConfigurationError as e:
-            error(
-                "Unable to import existing masterdata.",
+            warning(
+                "Unable to import masterdata.",
                 reason=str(e),
                 suggestion=(
-                    "Skip importing by running 'fmu init --skip-config-import' to "
-                    "proceed. You will need to establish valid SMDA masterdata in FMU "
+                    "You will need to establish valid SMDA masterdata in FMU "
                     "Settings by running and opening 'fmu settings'."
                 ),
             )
-            raise typer.Abort from e
 
-    init_fmu_directory(cwd, global_config=global_config)
+    if global_config:
+        success("Successfully imported masterdata from global config/variables.")
+
+    try:
+        init_fmu_directory(cwd, global_config=global_config)
+    except FileExistsError as e:
+        error(
+            "Unable to create .fmu directory.",
+            reason=str(e),
+            suggestion="You do not need to initialize a .fmu in this directory.",
+        )
+        raise typer.Abort from e
+    except PermissionError as e:
+        error(
+            "Unable to create .fmu directory.",
+            reason=str(e),
+            suggestion="You are lacking permissions to create files in this directory",
+        )
+        raise typer.Abort from e
+    except ValidationError as e:
+        validation_error(e, "Unable to create .fmu directory.")
+        raise typer.Abort from e
+    except Exception as e:
+        error(
+            "Unable to create .fmu directory",
+            reason=str(e),
+            suggestion=(
+                "This is an unknown error. Please report this as a bug in "
+                "'#fmu-settings' on Slack, Viva Engage, or the FMU Portal."
+            ),
+        )
+        raise typer.Abort from e
+
+    success("All done! You can now use the 'fmu settings' application.")
