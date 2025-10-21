@@ -3,7 +3,7 @@
 import typer
 
 from .init import init_cmd
-from .settings import settings_app
+from .settings.cli import settings_app
 
 app = typer.Typer(
     name="fmu",

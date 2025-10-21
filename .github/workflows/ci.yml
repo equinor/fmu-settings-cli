@@ -64,5 +64,6 @@ jobs:
         if: ${{ always() }}
         env:
           TERMINAL_WIDTH: 3000
+          COLUMNS: 3000
           _TYPER_FORCE_DISABLE_TERMINAL: 1
         run: uv run pytest -n auto tests --cov=src/ --cov-report term-missing

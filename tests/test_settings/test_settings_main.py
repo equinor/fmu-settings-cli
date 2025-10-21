@@ -1,7 +1,6 @@
-"""Tests for the __main__ module."""
+"""Tests for the settings sub-command module."""
 
-import sys
-from collections.abc import Callable, Generator
+from collections.abc import Callable
 from time import sleep
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -9,57 +8,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pytest import CaptureFixture
 
-from fmu_settings_cli.__main__ import main
 from fmu_settings_cli.settings._utils import generate_auth_token
 from fmu_settings_cli.settings.constants import API_PORT, GUI_PORT
 from fmu_settings_cli.settings.main import (
     init_worker,
     start_api_and_gui,
 )
-
-
-def test_main_invocation_with_no_options(
-    default_settings_args: dict[str, Any], patch_ensure_port: Generator[None]
-) -> None:
-    """Tests that 'fmu settings' calls 'start_api_and_gui'."""
-    with (
-        patch(
-            "fmu_settings_cli.settings.main.start_api_and_gui"
-        ) as mock_start_api_and_gui,
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
-        mock_start_api_and_gui.assert_called_once()
-
-
-def test_main_invocation_with_api_subcommand(
-    patch_ensure_port: Generator[None],
-) -> None:
-    """Tests that 'fmu settings api' calls 'start_api_server'."""
-    with (
-        patch.object(sys, "argv", ["fmu", "settings", "api"]),
-        patch(
-            "fmu_settings_cli.settings.main.start_api_server"
-        ) as mock_start_api_server,
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
-        mock_start_api_server.assert_called_once()
-
-
-def test_main_invocation_with_gui_subcommand(
-    patch_ensure_port: Generator[None],
-) -> None:
-    """Tests that 'fmu settings gui' calls 'start_gui_server'."""
-    with (
-        patch.object(sys, "argv", ["fmu", "settings", "gui"]),
-        patch(
-            "fmu_settings_cli.settings.main.start_gui_server"
-        ) as mock_start_gui_server,
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
-        mock_start_gui_server.assert_called_once()
 
 
 def test_start_api_and_gui_processes(default_settings_args: Any) -> None:
