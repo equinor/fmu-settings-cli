@@ -1,6 +1,5 @@
 """Tests 'fmu init' functionality."""
 
-import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -11,22 +10,12 @@ import yaml
 from fmu.datamodels.fmu_results.global_configuration import GlobalConfiguration
 from fmu.settings import find_nearest_fmu_directory
 from pydantic import ValidationError
-from pytest import CaptureFixture
+from typer.testing import CliRunner
 
-from fmu_settings_cli.__main__ import main
-from fmu_settings_cli.init.main import REQUIRED_FMU_PROJECT_SUBDIRS, is_fmu_project
+from fmu_settings_cli.__main__ import app
+from fmu_settings_cli.init.cli import REQUIRED_FMU_PROJECT_SUBDIRS, is_fmu_project
 
-
-def normalize_capsys(capsys: CaptureFixture[str]) -> tuple[str, str]:
-    """Returns stdout and stderr outputs into a flattened string.
-
-    Returns:
-        Tuple of stdout, stderr normalized strings.
-    """
-    captured = capsys.readouterr()
-    stdout = captured.out.replace("\n", " ").replace("  ", " ")
-    stderr = captured.err.replace("\n", " ").replace("  ", " ")
-    return stdout, stderr
+runner = CliRunner()
 
 
 @pytest.mark.parametrize(
@@ -48,113 +37,79 @@ def test_is_fmu_project(
     assert is_fmu_project(in_tmp_path) == expected
 
 
-def test_init_creates_user_fmu_if_not_exist(
-    in_tmp_path: Path, capsys: CaptureFixture[str]
-) -> None:
+def test_init_creates_user_fmu_if_not_exist(in_tmp_path: Path) -> None:
     """Tests that 'fmu init' creates a user .fmu/ dir."""
     home = in_tmp_path / "user"
     home.mkdir()
 
-    with (
-        patch.object(sys, "argv", ["fmu", "init"]),
-        patch("pathlib.Path.home", return_value=home),
-        pytest.raises(SystemExit, match="1"),
-    ):
-        main()
+    with patch("pathlib.Path.home", return_value=home):
+        result = runner.invoke(app, ["init"])
 
-    stdout, stderr = normalize_capsys(capsys)
-    assert "does not appear to be an FMU project" in stderr
-    assert "ert" in stderr
+    assert result.exit_code == 1
+    assert "does not appear to be an FMU project" in result.stderr
+    assert "ert" in result.stderr
     assert (home / ".fmu").exists()
 
 
-def test_init_creates_user_fmu_if_exist(
-    in_tmp_path: Path, capsys: CaptureFixture[str]
-) -> None:
+def test_init_creates_user_fmu_if_exist(in_tmp_path: Path) -> None:
     """Tests that 'fmu init' does not fail creating a user .fmu/ dir if it exists."""
     home = in_tmp_path / "user"
     home.mkdir()
     (home / ".fmu").mkdir()
 
-    with (
-        patch.object(sys, "argv", ["fmu", "init"]),
-        patch("pathlib.Path.home", return_value=home),
-        pytest.raises(SystemExit, match="1"),
-    ):
-        main()
+    with patch("pathlib.Path.home", return_value=home):
+        result = runner.invoke(app, ["init"])
 
-    stdout, stderr = normalize_capsys(capsys)
-    assert "does not appear to be an FMU project" in stderr
-    assert "ert" in stderr
+    assert result.exit_code == 1
+    assert "does not appear to be an FMU project" in result.stderr
+    assert "ert" in result.stderr
     assert (home / ".fmu").exists()
 
 
-def test_init_checks_if_fmu_dir_fails(
-    in_tmp_path: Path, capsys: CaptureFixture[str]
-) -> None:
+def test_init_checks_if_fmu_dir_fails(in_tmp_path: Path) -> None:
     """Tests that 'fmu init' checks if the directory has required subdirectories."""
-    with (
-        patch.object(sys, "argv", ["fmu", "init"]),
-        pytest.raises(SystemExit, match="1"),
-    ):
-        main()
-
-    stdout, stderr = normalize_capsys(capsys)
-    assert "does not appear to be an FMU project" in stderr
-    assert "ert" in stderr
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 1
+    assert "does not appear to be an FMU project" in result.stderr
+    assert "ert" in result.stderr
 
 
-def test_init_checks_if_fmu_dir_passes(
-    in_tmp_path: Path, capsys: CaptureFixture[str]
-) -> None:
+def test_init_checks_if_fmu_dir_passes(in_tmp_path: Path) -> None:
     """Tests that 'fmu init' checks if the directory has required subdirectories."""
     for dir_ in REQUIRED_FMU_PROJECT_SUBDIRS:
         (in_tmp_path / dir_).mkdir(parents=True, exist_ok=True)
     fmu_dir = in_tmp_path / ".fmu"
     assert fmu_dir.exists() is False
-    with (
-        patch.object(sys, "argv", ["fmu", "init"]),
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
 
-    stdout, stderr = normalize_capsys(capsys)
-    assert "Success: All done!" in stdout
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
+    assert "Success: All done!" in result.stdout
     assert fmu_dir.exists() is True
 
 
-def test_init_does_not_check_if_fmu_dir_is_forced(
-    in_tmp_path: Path, capsys: CaptureFixture[str]
-) -> None:
+def test_init_does_not_check_if_fmu_dir_is_forced(in_tmp_path: Path) -> None:
     """Tests that 'fmu init --force' doesn't check if the dir has required subdirs."""
     fmu_dir = in_tmp_path / ".fmu"
     assert fmu_dir.exists() is False
-    with (
-        patch.object(sys, "argv", ["fmu", "init", "--force"]),
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
-    stdout, stderr = normalize_capsys(capsys)
+    result = runner.invoke(app, ["init", "--force"])
+    assert result.exit_code == 0
     assert fmu_dir.exists() is True
 
 
 def test_init_looks_for_global_config(in_fmu_project: Path) -> None:
     """Tests that 'fmu init' checks if the directory has required subdirectories."""
-    with (
-        patch.object(sys, "argv", ["fmu", "init"]),
-        patch(
-            "fmu_settings_cli.init.main.find_global_config"
-        ) as mock_find_global_config,
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
+    with patch(
+        "fmu_settings_cli.init.cli.find_global_config"
+    ) as mock_find_global_config:
+        result = runner.invoke(app, ["init"])
         mock_find_global_config.assert_called_once_with(in_fmu_project)
+
+    assert result.exit_code == 0
 
 
 def test_init_adds_global_variables_without_masterdata(
     in_fmu_project: Path,
     global_variables_without_masterdata: dict[str, Any],
-    capsys: CaptureFixture[str],
 ) -> None:
     """Tests that 'fmu init' fails creating a .fmu if the config has no masterdata."""
     tmp_path = in_fmu_project
@@ -165,19 +120,18 @@ def test_init_adds_global_variables_without_masterdata(
         yaml.safe_dump(global_variables_without_masterdata)
     )
 
-    with (
-        patch.object(sys, "argv", ["fmu", "init"]),
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
 
-    stdout, stderr = normalize_capsys(capsys)
-    assert "Warning: Unable to import masterdata" in stderr
-    assert "Reason: Validation of the global config/global variables failed." in stderr
-    assert "access: Field required" in stderr
-    assert "masterdata: Field required" in stderr
-    assert "model: Field required" in stderr
-    assert "Success: All done!" in stdout
+    assert "Warning: Unable to import masterdata" in result.stderr
+    assert (
+        "Reason: Validation of the global config/global variables failed."
+        in result.stderr
+    )
+    assert "access: Field required" in result.stderr
+    assert "masterdata: Field required" in result.stderr
+    assert "model: Field required" in result.stderr
+    assert "Success: All done!" in result.stdout
 
     fmu_dir = find_nearest_fmu_directory()
     fmu_dir_cfg = fmu_dir.config.load()
@@ -189,7 +143,6 @@ def test_init_adds_global_variables_without_masterdata(
 def test_init_adds_global_variables_with_masterdata(
     in_fmu_project: Path,
     generate_strict_valid_globalconfiguration: Callable[[], GlobalConfiguration],
-    capsys: CaptureFixture[str],
 ) -> None:
     """Tests that 'fmu init' adds masterdata if it does exist."""
     tmp_path = in_fmu_project
@@ -203,15 +156,10 @@ def test_init_adds_global_variables_with_masterdata(
         yaml.dump(valid_global_cfg.model_dump(mode="json", by_alias=True))
     )
 
-    with (
-        patch.object(sys, "argv", ["fmu", "init"]),
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
-
-    stdout, stderr = normalize_capsys(capsys)
-    assert "Success: Successfully imported masterdata" in stdout
-    assert "Success: All done!" in stdout
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
+    assert "Success: Successfully imported masterdata" in result.stdout
+    assert "Success: All done!" in result.stdout
 
     fmu_dir = find_nearest_fmu_directory()
     fmu_dir_cfg = fmu_dir.config.load()
@@ -223,7 +171,6 @@ def test_init_adds_global_variables_with_masterdata(
 def test_init_skips_adding_global_variables_with_masterdata(
     in_fmu_project: Path,
     generate_strict_valid_globalconfiguration: Callable[[], GlobalConfiguration],
-    capsys: CaptureFixture[str],
 ) -> None:
     """Tests that 'fmu init' skips adding masterdata with skip flag."""
     tmp_path = in_fmu_project
@@ -237,14 +184,9 @@ def test_init_skips_adding_global_variables_with_masterdata(
         yaml.dump(valid_global_cfg.model_dump(mode="json", by_alias=True))
     )
 
-    with (
-        patch.object(sys, "argv", ["fmu", "init", "--skip-config-import"]),
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
-
-    stdout, stderr = normalize_capsys(capsys)
-    assert "Success: All done!" in stdout
+    result = runner.invoke(app, ["init", "--skip-config-import"])
+    assert result.exit_code == 0
+    assert "Success: All done!" in result.stdout
 
     fmu_dir = find_nearest_fmu_directory()
     fmu_dir_cfg = fmu_dir.config.load()
@@ -254,9 +196,7 @@ def test_init_skips_adding_global_variables_with_masterdata(
 
 
 def test_init_raises_when_import_drogon_masterdata(
-    in_fmu_project: Path,
-    global_variables_with_masterdata: dict[str, Any],
-    capsys: CaptureFixture[str],
+    in_fmu_project: Path, global_variables_with_masterdata: dict[str, Any]
 ) -> None:
     """Tests that 'fmu init' warns when importing Drogon masterdata."""
     tmp_path = in_fmu_project
@@ -268,22 +208,15 @@ def test_init_raises_when_import_drogon_masterdata(
         yaml.dump(global_variables_with_masterdata)
     )
 
-    with (
-        patch.object(sys, "argv", ["fmu", "init"]),
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
-
-    stdout, stderr = normalize_capsys(capsys)
-    assert "Warning: Unable to import masterdata" in stderr
-    assert "Reason: Invalid name in 'model': Drogon" in stderr
-    assert "Success: All done!" in stdout
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
+    assert "Warning: Unable to import masterdata" in result.stderr
+    assert "Reason: Invalid name in 'model': Drogon" in result.stderr
+    assert "Success: All done!" in result.stdout
 
 
 def test_init_skips_raising_when_import_drogon_masterdata_with_skip(
-    in_fmu_project: Path,
-    global_variables_with_masterdata: dict[str, Any],
-    capsys: CaptureFixture[str],
+    in_fmu_project: Path, global_variables_with_masterdata: dict[str, Any]
 ) -> None:
     """Tests that 'fmu init' skips raising on Drogon masterdata with skip flag."""
     tmp_path = in_fmu_project
@@ -295,17 +228,11 @@ def test_init_skips_raising_when_import_drogon_masterdata_with_skip(
         yaml.dump(global_variables_with_masterdata)
     )
 
-    # Does not raise
-    with (
-        patch.object(sys, "argv", ["fmu", "init", "--skip-config-import"]),
-        pytest.raises(SystemExit, match="0"),
-    ):
-        main()
-
-    stdout, stderr = normalize_capsys(capsys)
+    result = runner.invoke(app, ["init", "--skip-config-import"])
+    assert result.exit_code == 0
     # _not_ in
-    assert "Reason: Invalid name in 'model': Drogon" not in stderr
-    assert "Success: All done!" in stdout
+    assert "Reason: Invalid name in 'model': Drogon" not in result.stderr
+    assert "Success: All done!" in result.stdout
 
     fmu_dir = find_nearest_fmu_directory()
     fmu_dir_cfg = fmu_dir.config.load()
@@ -314,86 +241,57 @@ def test_init_skips_raising_when_import_drogon_masterdata_with_skip(
     assert fmu_dir_cfg.model is None
 
 
-def test_init_fmu_dir_exists_error(
-    in_fmu_project: Path,
-    capsys: CaptureFixture[str],
-) -> None:
+def test_init_fmu_dir_exists_error(in_fmu_project: Path) -> None:
     """Tests that .fmu already existing gives error."""
     fmu_dir = in_fmu_project / ".fmu"
     fmu_dir.mkdir()
-    with (
-        patch.object(sys, "argv", ["fmu", "init", "--skip-config-import"]),
-        pytest.raises(SystemExit, match="1"),
-    ):
-        main()
 
-    stdout, stderr = normalize_capsys(capsys)
-    assert "Error: Unable to create .fmu directory" in stderr
-    assert ".fmu already exists" in stderr
-    assert "You do not need to initialize a .fmu in this directory." in stderr
-    assert "Aborted." in stderr
+    result = runner.invoke(app, ["init", "--skip-config-import"])
+    assert result.exit_code == 1
+    assert "Error: Unable to create .fmu directory" in result.stderr
+    assert ".fmu already exists" in result.stderr
+    assert "You do not need to initialize a .fmu in this directory." in result.stderr
+    assert "Aborted." in result.stderr
 
 
-def test_init_fmu_dir_no_permissions_error(
-    in_fmu_project: Path,
-    capsys: CaptureFixture[str],
-) -> None:
+def test_init_fmu_dir_no_permissions_error(in_fmu_project: Path) -> None:
     """Tests that lacking permissions to create .fmu gives error."""
-    with (
-        patch.object(sys, "argv", ["fmu", "init", "--skip-config-import"]),
-        pytest.raises(SystemExit, match="1"),
-        patch(
-            "fmu_settings_cli.init.main.init_fmu_directory", side_effect=PermissionError
-        ),
+    with patch(
+        "fmu_settings_cli.init.cli.init_fmu_directory", side_effect=PermissionError
     ):
-        main()
+        result = runner.invoke(app, ["init", "--skip-config-import"])
+    assert result.exit_code == 1
+    assert "Error: Unable to create .fmu directory" in result.stderr
+    assert "lacking permissions to create" in result.stderr
+    assert "Aborted." in result.stderr
 
-    stdout, stderr = normalize_capsys(capsys)
-    assert "Error: Unable to create .fmu directory" in stderr
-    assert "lacking permissions to create" in stderr
-    assert "Aborted." in stderr
 
-
-def test_init_fmu_dir_validation_error(
-    in_fmu_project: Path,
-    capsys: CaptureFixture[str],
-) -> None:
+def test_init_fmu_dir_validation_error(in_fmu_project: Path) -> None:
     """Tests that validation error when creating .fmu is caught.
 
     This should never happen unless there's a race condition.
     """
-    with (
-        patch.object(sys, "argv", ["fmu", "init", "--skip-config-import"]),
-        pytest.raises(SystemExit, match="1"),
-        patch(
-            "fmu_settings_cli.init.main.init_fmu_directory",
-            side_effect=ValidationError("Foo", []),
-        ),
+    with patch(
+        "fmu_settings_cli.init.cli.init_fmu_directory",
+        side_effect=ValidationError("Foo", []),
     ):
-        main()
+        result = runner.invoke(app, ["init", "--skip-config-import"])
+    assert result.exit_code == 1
 
-    stdout, stderr = normalize_capsys(capsys)
-    assert "Error: Unable to create .fmu directory" in stderr
-    assert "Aborted." in stderr
+    assert "Error: Unable to create .fmu directory" in result.stderr
+    assert "Aborted." in result.stderr
 
 
-def test_init_fmu_dir_some_error(
-    in_fmu_project: Path,
-    capsys: CaptureFixture[str],
-) -> None:
+def test_init_fmu_dir_some_error(in_fmu_project: Path) -> None:
     """Tests that .fmu already existing gives error."""
-    with (
-        patch.object(sys, "argv", ["fmu", "init", "--skip-config-import"]),
-        pytest.raises(SystemExit, match="1"),
-        patch(
-            "fmu_settings_cli.init.main.init_fmu_directory",
-            side_effect=ValueError("Foo"),
-        ),
+    with patch(
+        "fmu_settings_cli.init.cli.init_fmu_directory",
+        side_effect=ValueError("Foo"),
     ):
-        main()
+        result = runner.invoke(app, ["init", "--skip-config-import"])
+    assert result.exit_code == 1
 
-    stdout, stderr = normalize_capsys(capsys)
-    assert "Error: Unable to create .fmu directory" in stderr
-    assert "Reason: Foo" in stderr
-    assert "Please report this as a bug" in stderr
-    assert "Aborted." in stderr
+    assert "Error: Unable to create .fmu directory" in result.stderr
+    assert "Reason: Foo" in result.stderr
+    assert "Please report this as a bug" in result.stderr
+    assert "Aborted." in result.stderr

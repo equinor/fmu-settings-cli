@@ -18,8 +18,17 @@ from fmu.datamodels.fmu_results.global_configuration import (
 )
 from pytest import MonkeyPatch
 
-from fmu_settings_cli.init.main import REQUIRED_FMU_PROJECT_SUBDIRS
+from fmu_settings_cli.init.cli import REQUIRED_FMU_PROJECT_SUBDIRS
 from fmu_settings_cli.settings import constants
+
+
+@pytest.fixture(autouse=True)
+def set_column_width(monkeypatch: MonkeyPatch) -> None:
+    """Sets a higher column width to prevent tests from failing.
+
+    Used for Typer CLI tests.
+    """
+    monkeypatch.setenv("TERMINAL_WIDTH", "3000")
 
 
 @pytest.fixture
@@ -37,7 +46,7 @@ def default_settings_args() -> Generator[dict[str, Any]]:
 @pytest.fixture
 def patch_ensure_port() -> Generator[None]:
     """Patches ensure port so tests can run if fmu-settings is running."""
-    with patch("fmu_settings_cli.settings.main.ensure_port"):
+    with patch("fmu_settings_cli.settings.cli.ensure_port"):
         yield
 
 

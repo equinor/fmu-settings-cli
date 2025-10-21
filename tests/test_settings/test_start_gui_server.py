@@ -5,8 +5,8 @@ from unittest.mock import patch
 import pytest
 from pytest import CaptureFixture
 
+from fmu_settings_cli.settings._utils import generate_auth_token
 from fmu_settings_cli.settings.gui_server import start_gui_server
-from fmu_settings_cli.settings.main import generate_auth_token
 
 
 def test_start_gui_server() -> None:

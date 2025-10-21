@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
+from fmu_settings_cli.settings._utils import generate_auth_token
 from fmu_settings_cli.settings.api_server import start_api_server
-from fmu_settings_cli.settings.main import generate_auth_token
 
 
 def test_start_api_server() -> None:
