@@ -40,6 +40,7 @@ def default_settings_args() -> Generator[dict[str, Any]]:
             "gui_port": constants.GUI_PORT,
             "host": constants.HOST,
             "reload": False,
+            "log_level": "critical",
         }
 
 

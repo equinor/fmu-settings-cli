@@ -62,12 +62,14 @@ def test_start_api_and_gui_processes(default_settings_args: Any) -> None:
             frontend_host=default_settings_args["host"],
             frontend_port=default_settings_args["gui_port"],
             reload=default_settings_args["reload"],
+            log_level=default_settings_args["log_level"],
         )
         mock_executor_instance.submit.assert_any_call(
             mock_start_gui_server,
             token,
             host=default_settings_args["host"],
             port=default_settings_args["gui_port"],
+            log_level=default_settings_args["log_level"],
         )
         mock_executor_instance.submit.assert_any_call(
             mock_webbrowser_open,
