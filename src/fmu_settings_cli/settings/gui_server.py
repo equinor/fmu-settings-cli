@@ -11,6 +11,7 @@ def start_gui_server(
     token: str,
     host: str = HOST,
     port: int = GUI_PORT,
+    log_level: str = "critical",
 ) -> None:
     """Starts the fmu-settings-gui server.
 
@@ -21,6 +22,7 @@ def start_gui_server(
         token: The authentication token the GUI uses
         host: The host to bind the server to
         port: The port to run the server on
+        log_level: The log level to give to uvicorn.
     """
     if port not in APP_REG_PORTS:
         known_ports_str = ", ".join(str(i) for i in APP_REG_PORTS)
@@ -31,6 +33,6 @@ def start_gui_server(
 
     try:
         info(f"Starting FMU Settings GUI server on {host}:{port} ...")
-        run_server(host, port)
+        run_server(host, port, log_level=log_level)
     except Exception as e:
         raise RuntimeError(f"Could not start GUI server: {e}") from e

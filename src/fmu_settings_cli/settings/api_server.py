@@ -14,6 +14,7 @@ def start_api_server(  # noqa: PLR0913
     frontend_host: str = HOST,
     frontend_port: int = GUI_PORT,
     reload: bool = False,
+    log_level: str = "critical",
 ) -> None:
     """Starts the fmu-settings-api server.
 
@@ -24,6 +25,7 @@ def start_api_server(  # noqa: PLR0913
         frontend_host: The frontend host to allow (CORS)
         frontend_port: The frontend port to allow (CORS)
         reload: Auto-reload the API. Default False.
+        log_level: The log level to give to uvicorn.
     """
     try:
         info(f"Starting FMU Settings API server on {host}:{port} ...")
@@ -34,6 +36,7 @@ def start_api_server(  # noqa: PLR0913
             frontend_host=frontend_host,
             frontend_port=frontend_port,
             reload=reload,
+            log_level=log_level,
         )
     except Exception as e:
         raise RuntimeError(f"Could not start API server: {e}") from e

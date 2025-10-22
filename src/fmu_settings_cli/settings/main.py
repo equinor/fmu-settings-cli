@@ -20,8 +20,13 @@ def init_worker() -> None:  # pragma: no cover
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
 
 
-def start_api_and_gui(
-    token: str, api_port: int, gui_port: int, host: str, reload: bool
+def start_api_and_gui(  # noqa: PLR0913 too many args
+    token: str,
+    api_port: int,
+    gui_port: int,
+    host: str,
+    reload: bool,
+    log_level: str,
 ) -> None:
     """Starts both API and GUI as concurrent processes.
 
@@ -31,6 +36,7 @@ def start_api_and_gui(
         gui_port: The port the GUI will bind to
         host: The host both the API and GUI will bind to
         reload: If True, the API will reload on any code changes
+        log_level: The log level to give to uvicorn in both the API and GUI.
     """
     with ProcessPoolExecutor(max_workers=3, initializer=init_worker) as executor:
         try:
@@ -43,12 +49,14 @@ def start_api_and_gui(
                     frontend_host=host,
                     frontend_port=gui_port,
                     reload=reload,
+                    log_level=log_level,
                 ),
                 "gui": executor.submit(
                     start_gui_server,
                     token,
                     host=host,
                     port=gui_port,
+                    log_level=log_level,
                 ),
             }
 

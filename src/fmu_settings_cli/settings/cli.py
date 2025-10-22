@@ -12,7 +12,7 @@ from ._utils import (
     generate_auth_token,
 )
 from .api_server import start_api_server
-from .constants import API_PORT, HOST, GuiPort
+from .constants import API_PORT, HOST, GuiPort, LogLevel
 from .gui_server import start_gui_server
 from .main import start_api_and_gui
 
@@ -36,11 +36,19 @@ def gui(
             show_default=False,
         ),
     ] = HOST,
+    log_level: Annotated[
+        LogLevel,
+        typer.Option(
+            "--log-level",
+            help="The minimum log level to display in the terminal.",
+            envvar="FMU_SETTINGS_LOG_LEVEL",
+        ),
+    ] = "critical",
 ) -> None:
     """Start the FMU Settings GUI only. Used for development."""
     ensure_port(gui_port)
     token = generate_auth_token()
-    start_gui_server(token, host=host, port=gui_port)
+    start_gui_server(token, host=host, port=gui_port, log_level=log_level)
 
 
 @settings_app.command()
@@ -93,6 +101,14 @@ def api(  # noqa: PLR0913
             envvar="FMU_SETTINGS_PRINT_URL",
         ),
     ] = False,
+    log_level: Annotated[
+        LogLevel,
+        typer.Option(
+            "--log-level",
+            help="The minimum log level to display in the terminal.",
+            envvar="FMU_SETTINGS_LOG_LEVEL",
+        ),
+    ] = "critical",
 ) -> None:
     """Start the FMU Settings API only. Used for development."""
     ensure_port(api_port)
@@ -110,11 +126,12 @@ def api(  # noqa: PLR0913
         frontend_host=host,
         frontend_port=gui_port,
         reload=reload,
+        log_level=log_level,
     )
 
 
 @settings_app.callback(invoke_without_command=True)
-def settings(
+def settings(  # noqa: PLR0913 too many args
     ctx: typer.Context,
     api_port: Annotated[
         int,
@@ -140,6 +157,14 @@ def settings(
             show_default=False,
         ),
     ] = False,
+    log_level: Annotated[
+        LogLevel,
+        typer.Option(
+            "--log-level",
+            help="The minimum log level to display in the terminal.",
+            envvar="FMU_SETTINGS_LOG_LEVEL",
+        ),
+    ] = "critical",
 ) -> None:
     """The main entry point for the settings command."""
     if ctx.invoked_subcommand is not None:
@@ -149,4 +174,4 @@ def settings(
         ensure_port(port)
 
     token = generate_auth_token()
-    start_api_and_gui(token, api_port, gui_port, host, reload)
+    start_api_and_gui(token, api_port, gui_port, host, reload, log_level)

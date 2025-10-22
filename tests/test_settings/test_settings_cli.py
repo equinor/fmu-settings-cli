@@ -22,6 +22,7 @@ def test_settings_cmd_with_help(patch_ensure_port: Generator[None]) -> None:
     assert "Start the FMU Settings application" in result.stdout
     assert "Start the FMU Settings GUI only" in result.stdout
     assert "Start the FMU Settings API only" in result.stdout
+    assert "--log-level" in result.stdout
 
 
 def test_settings_cmd_with_no_options(patch_ensure_port: Generator[None]) -> None:
@@ -122,6 +123,7 @@ def test_settings_api_cmd_with_help(patch_ensure_port: Generator[None]) -> None:
     assert "--reload" in result.stdout
     assert "--print-token" in result.stdout
     assert "--print-url" in result.stdout
+    assert "--log-level" in result.stdout
 
 
 def test_settings_api_cmd_with_reload(
@@ -201,6 +203,7 @@ def test_settings_gui_cmd_with_help(patch_ensure_port: Generator[None]) -> None:
 
     assert result.exit_code == 0
     assert "Start the FMU Settings GUI only" in result.stdout
+    assert "--log-level" in result.stdout
 
 
 def test_settings_gui_cmd_with_host_port(
