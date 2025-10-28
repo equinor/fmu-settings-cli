@@ -16,6 +16,8 @@ from fmu.datamodels.fmu_results.global_configuration import (
     Stratigraphy,
     StratigraphyElement,
 )
+from fmu.settings import ProjectFMUDirectory
+from fmu.settings._init import init_fmu_directory
 from pytest import MonkeyPatch
 
 from fmu_settings_cli.init.cli import REQUIRED_FMU_PROJECT_SUBDIRS
@@ -223,3 +225,22 @@ def generate_strict_valid_globalconfiguration() -> Callable[[], GlobalConfigurat
         )
 
     return _generate_cfg
+
+
+@pytest.fixture
+def two_fmu_revisions(
+    tmp_path: Path,
+    generate_strict_valid_globalconfiguration: Callable[[], GlobalConfiguration],
+) -> tuple[Path, ProjectFMUDirectory, ProjectFMUDirectory]:
+    """Generates a dir with two user revisions with the same global configuration."""
+    project_a = tmp_path / "a"
+    project_b = tmp_path / "b"
+
+    fmu_dirs = []
+    global_config = generate_strict_valid_globalconfiguration()
+    for project in (project_a, project_b):
+        (project / "ert").mkdir(parents=True, exist_ok=True)
+        (project / "fmuconfig/input").mkdir(parents=True, exist_ok=True)
+        fmu_dirs.append(init_fmu_directory(project, global_config=global_config))
+
+    return tmp_path, fmu_dirs[0], fmu_dirs[1]
