@@ -4,6 +4,7 @@ import typer
 
 from .init import init_cmd
 from .settings.cli import settings_app
+from .sync import sync_cmd
 
 app = typer.Typer(
     name="fmu",
@@ -13,6 +14,7 @@ app = typer.Typer(
 )
 
 app.add_typer(init_cmd, name="init")
+app.add_typer(sync_cmd, name="sync")
 app.add_typer(settings_app, name="settings")
 
 
