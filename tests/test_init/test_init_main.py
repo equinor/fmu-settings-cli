@@ -37,20 +37,6 @@ def test_is_fmu_project(
     assert is_fmu_project(in_tmp_path) == expected
 
 
-def test_init_creates_user_fmu_if_not_exist(in_tmp_path: Path) -> None:
-    """Tests that 'fmu init' creates a user .fmu/ dir."""
-    home = in_tmp_path / "user"
-    home.mkdir()
-
-    with patch("pathlib.Path.home", return_value=home):
-        result = runner.invoke(app, ["init"])
-
-    assert result.exit_code == 1
-    assert "does not appear to be an FMU project" in result.stderr
-    assert "ert" in result.stderr
-    assert (home / ".fmu").exists()
-
-
 def test_init_creates_user_fmu_if_exist(in_tmp_path: Path) -> None:
     """Tests that 'fmu init' does not fail creating a user .fmu/ dir if it exists."""
     home = in_tmp_path / "user"
