@@ -1,6 +1,5 @@
 """The 'init' command."""
 
-import contextlib
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Final
 
@@ -9,7 +8,7 @@ from fmu.settings._global_config import (
     InvalidGlobalConfigurationError,
     find_global_config,
 )
-from fmu.settings._init import init_fmu_directory, init_user_fmu_directory
+from fmu.settings._init import init_fmu_directory
 from pydantic import ValidationError
 from rich.table import Table
 
@@ -79,9 +78,6 @@ def init(
     """The main entry point for the init command."""
     if ctx.invoked_subcommand is not None:  # pragma: no cover
         return
-
-    with contextlib.suppress(FileExistsError):
-        init_user_fmu_directory()
 
     cwd = Path.cwd()
 

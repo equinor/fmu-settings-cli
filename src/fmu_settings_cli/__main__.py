@@ -1,16 +1,27 @@
 """The main entry point for fmu-settings-cli."""
 
+import contextlib
+
 import typer
+from fmu.settings._init import init_user_fmu_directory
 
 from .init import init_cmd
 from .settings.cli import settings_app
 from .sync import sync_cmd
+
+
+def init_user_fmu() -> None:
+    """Create a user .fmu/ whenever a command is run."""
+    with contextlib.suppress(FileExistsError):
+        init_user_fmu_directory()
+
 
 app = typer.Typer(
     name="fmu",
     help="FMU Settings - Manage your FMU project",
     add_completion=True,
     no_args_is_help=True,
+    callback=init_user_fmu,
 )
 
 app.add_typer(init_cmd, name="init")
