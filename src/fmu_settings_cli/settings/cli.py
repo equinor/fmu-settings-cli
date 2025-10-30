@@ -17,7 +17,11 @@ from .gui_server import start_gui_server
 from .main import start_api_and_gui
 
 settings_app = typer.Typer(
-    help="Start the FMU Settings application and manage your FMU model's settings.",
+    help=(
+        "Start the FMU Settings application and manage your FMU model's settings.\n\n"
+        "Run 'fmu settings' to use the application. The commands below are not "
+        "recommended or necessary for normal users in normal usage."
+    ),
     add_completion=True,
 )
 
