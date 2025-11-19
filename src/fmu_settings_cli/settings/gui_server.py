@@ -1,7 +1,5 @@
 """Functionality to start the GUI server."""
 
-from fmu_settings_gui import run_server
-
 from fmu_settings_cli.prints import info
 
 from .constants import APP_REG_PORTS, GUI_PORT, HOST
@@ -24,6 +22,8 @@ def start_gui_server(
         port: The port to run the server on
         log_level: The log level to give to uvicorn.
     """
+    from fmu_settings_gui import run_server  # noqa: PLC0415 lazy load
+
     if port not in APP_REG_PORTS:
         known_ports_str = ", ".join(str(i) for i in APP_REG_PORTS)
         raise ValueError(

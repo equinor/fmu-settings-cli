@@ -1,7 +1,5 @@
 """Functionality to start the API server."""
 
-from fmu_settings_api import run_server
-
 from fmu_settings_cli.prints import info
 
 from .constants import API_PORT, GUI_PORT, HOST
@@ -27,6 +25,8 @@ def start_api_server(  # noqa: PLR0913
         reload: Auto-reload the API. Default False.
         log_level: The log level to give to uvicorn.
     """
+    from fmu_settings_api import run_server  # noqa: PLC0415 lazy load
+
     try:
         info(f"Starting FMU Settings API server on {host}:{port} ...")
         run_server(
