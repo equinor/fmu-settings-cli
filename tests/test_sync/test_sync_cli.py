@@ -204,6 +204,9 @@ def test_sync_finds_changed_value_field_and_saves_after_confirm(
     assert "foo" in result.stdout
     assert "Complex Changes" not in result.stdout  # Not in
     assert "Success: All done!" in result.stdout
+    # Full, absolute paths are used
+    assert str(project_a.path.parent.absolute()) in result.stdout.replace("\n", "")
+    assert str(project_b.path.parent.absolute()) in result.stdout.replace("\n", "")
     assert result.exit_code == 0
 
     # Does update it.

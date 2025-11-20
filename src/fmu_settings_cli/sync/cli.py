@@ -95,10 +95,13 @@ def sync(
 
     display_model_diff(changes, to_config, from_config)
 
+    from_dir_abs = from_dir.absolute()
+    to_dir_abs = to_dir.absolute()
+
     warning(
         f"The above changes will be merged\n"
-        f"  [bold][cyan]→[/cyan] From[/bold]: {str(from_dir)}\n"
-        f"  [bold][cyan]→[/cyan] To[/bold]: {str(to_dir)}\n"
+        f"  [bold][cyan]→[/cyan] From[/bold]: {str(from_dir_abs)}\n"
+        f"  [bold][cyan]→[/cyan] To[/bold]: {str(to_dir_abs)}\n"
     )
     confirmed = typer.confirm("Merge these changes?")
     if not confirmed:
@@ -107,4 +110,4 @@ def sync(
     # TODO: Be more granular in updated. We don't want to update the 'created_at' or
     # 'created_by', for example. But fine for an initial implementation.
     to_fmu.update_config(from_config.model_dump())
-    success(f"All done! {from_dir} has been sync'd to {to_dir}.")
+    success(f"All done! {from_dir_abs} has been sync'd to {to_dir_abs}.")
