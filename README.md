@@ -9,13 +9,13 @@
 To launch the application simply run
 
 ```bash
-fmu-settings
+fmu settings
 ```
 
 To start only the API, run
 
 ```bash
-fmu-settings api
+fmu settings api
 ```
 
 It is also possible to specify the port and if the API should be reloaded, as
@@ -24,7 +24,7 @@ in during development.
 ## Starting the API only
 
 ```bash
-fmu-settings api --port 8001
+fmu settings api --port 8001
 ```
 
 By default the API will set CORS rules restricting requests to a default host
@@ -32,7 +32,7 @@ and port (`localhost:8000`). In development with a GUI it's likely your
 frontend port will be something different. You can specify this like so:
 
 ```bash
-fmu-settings api --gui-port 5173
+fmu settings api --gui-port 5173
 ```
 
 This will update the CORS rules in the API to accept requests from
@@ -44,7 +44,7 @@ the API for use in development this token can be printed by setting the
 flag.
 
 ```bash
-fmu-settings api --gui-port 5173 --print-token
+fmu settings api --gui-port 5173 --print-token
 # or
 export FMU_SETTINGS_PRINT_TOKEN=true
 # or
@@ -55,7 +55,7 @@ It's also possible to print the full URL a user would be directed to with a
 similar URL flag and environment variable.
 
 ```bash
-fmu-settings api --gui-port 5173 --print-url
+fmu settings api --gui-port 5173 --print-url
 # or
 export FMU_SETTINGS_PRINT_URL=true
 # or
@@ -63,14 +63,14 @@ FMU_SETTINGS_PRINT_URL=true fmu-settings api --gui-port 5173
 ```
 
 Note that these additional flags are intended for development so they _only_ work
-with `fmu-settings api` subcommand.
+with `fmu settings api` subcommand.
 
 ## Starting the GUI only
 
 You can similarly start the GUI server:
 
 ```bash
-fmu-settings gui
+fmu settings gui
 ```
 
 ## Developing
