@@ -174,7 +174,7 @@ def test_sync_finds_changed_value_field(
     result = runner.invoke(
         app, ["sync", "--to", str(project_b.path.parent)], input="n\n"
     )
-    assert "Value Changes in ProjectConfig" in result.stdout
+    assert "Value Changes in config" in result.stdout
     assert "model.name" in result.stdout
     assert "foo" in result.stdout
     assert result.exit_code == 1
@@ -199,12 +199,11 @@ def test_sync_finds_changed_value_field_and_saves_after_confirm(
     result = runner.invoke(
         app, ["sync", "--to", str(project_b.path.parent)], input="y\n"
     )
-    assert "Value Changes in ProjectConfig" in result.stdout
+    assert "Value Changes in config" in result.stdout
     assert "model.name" in result.stdout
     assert "foo" in result.stdout
     assert "Complex Changes" not in result.stdout  # Not in
     assert "Success: All done!" in result.stdout
-    # Full, absolute paths are used
     assert str(project_a.path.parent.absolute()) in result.stdout.replace("\n", "")
     assert str(project_b.path.parent.absolute()) in result.stdout.replace("\n", "")
     assert result.exit_code == 0
@@ -231,7 +230,7 @@ def test_sync_finds_changed_complex_field_and_saves_after_confirm(
         app, ["sync", "--to", str(project_b.path.parent)], input="y\n"
     )
 
-    assert "Value Changes in ProjectConfig" in result.stdout
+    assert "Value Changes in config" in result.stdout
     assert "masterdata" in result.stdout
     assert "None" in result.stdout
     assert "Masterdata" in result.stdout
@@ -268,7 +267,7 @@ def test_sync_finds_changed_list_and_saves_after_confirm(
         app, ["sync", "--to", str(project_b.path.parent)], input="y\n"
     )
 
-    assert "Value Changes in ProjectConfig" in result.stdout
+    assert "Value Changes in config" in result.stdout
     assert "masterdata.smda.country" in result.stdout
     assert "[]" in result.stdout
 

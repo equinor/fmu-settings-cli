@@ -14,7 +14,7 @@ from fmu_settings_cli.prints import (
     warning,
 )
 
-from .model_diff import display_model_diff, get_model_diff
+from .model_diff import display_model_diff
 
 sync_cmd = typer.Typer(
     help=(
@@ -85,15 +85,14 @@ def sync(
         )
         raise typer.Abort from e
 
-    from_config = from_fmu.config.load()
-    to_config = to_fmu.config.load()
+    changes = to_fmu.get_dir_diff(from_fmu.path.parent)
 
-    changes = get_model_diff(to_config, from_config)
-    if not changes:
+    if all(len(change_list) == 0 for change_list in changes.values()):
         success("No changes detected.")
         raise typer.Exit(0)
 
-    display_model_diff(changes, to_config, from_config)
+    for resource, change_list in changes.items():
+        display_model_diff(resource, change_list)
 
     from_dir_abs = from_dir.absolute()
     to_dir_abs = to_dir.absolute()
@@ -107,7 +106,5 @@ def sync(
     if not confirmed:
         raise typer.Abort
 
-    # TODO: Be more granular in updated. We don't want to update the 'created_at' or
-    # 'created_by', for example. But fine for an initial implementation.
-    to_fmu.update_config(from_config.model_dump())
+    to_fmu.sync_dir(from_fmu.path.parent)
     success(f"All done! {from_dir_abs} has been sync'd to {to_dir_abs}.")
