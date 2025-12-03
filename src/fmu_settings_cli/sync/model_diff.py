@@ -12,44 +12,6 @@ MAX_VALUE_STR_LENGTH: Final[int] = 30
 IGNORED_FIELDS: Final[list[str]] = ["created_at", "created_by"]
 
 
-def get_model_diff(
-    old_model: BaseModel, new_model: BaseModel, prefix: str = ""
-) -> list[tuple[str, Any, Any]]:
-    """Recursively get differences between two Pydantic models."""
-    model_class = type(old_model)
-    if type(new_model) is not model_class:
-        raise ValueError(
-            "Models must be of the same type. Old model is of type "
-            f"'{old_model.__class__.__name__}', new model of type "
-            f"'{new_model.__class__.__name__}'."
-        )
-
-    changes: list[tuple[str, Any, Any]] = []
-
-    for field_name in model_class.model_fields:
-        if field_name in IGNORED_FIELDS:
-            continue
-
-        old_value = getattr(old_model, field_name)
-        new_value = getattr(new_model, field_name)
-
-        field_path = f"{prefix}.{field_name}" if prefix else field_name
-
-        if old_value is None and new_value is not None:
-            changes.append((field_path, None, new_value))
-        elif old_value is not None and new_value is None:
-            changes.append((field_path, old_value, None))
-        elif isinstance(old_value, BaseModel) and isinstance(new_value, BaseModel):
-            changes.extend(get_model_diff(old_value, new_value, field_path))
-        elif isinstance(old_value, list) and isinstance(new_value, list):
-            if old_value != new_value:
-                changes.append((field_path, old_value, new_value))
-        elif old_value != new_value:
-            changes.append((field_path, old_value, new_value))
-
-    return changes
-
-
 def format_simple_value(value: Any, max_length: int = MAX_VALUE_STR_LENGTH) -> str:
     """Format a value for display, handling BaseModels specially."""
     if value is None:
@@ -179,9 +141,7 @@ def render_list_panel(items: list[Any], field_path: str, added: bool = True) -> 
     )
 
 
-def display_model_diff(
-    changes: list[tuple[str, Any, Any]], old_model: BaseModel, new_model: BaseModel
-) -> None:
+def display_model_diff(resource: str, changes: list[tuple[str, Any, Any]]) -> None:
     """Display diff in table format."""
     console = Console()
     if not changes:
@@ -195,7 +155,7 @@ def display_model_diff(
             complex_changes.append((field_path, old_val, new_val))
 
     table = Table(
-        title=f"Value Changes in {type(old_model).__name__}",
+        title=f"Value Changes in {resource}",
         show_header=True,
         header_style="bold",
     )
@@ -213,7 +173,7 @@ def display_model_diff(
 
     if complex_changes:
         table = Table(
-            title=f"Complex Changes in {type(old_model).__name__}",
+            title=f"Complex Changes in {resource}",
             show_header=True,
             header_style="bold",
         )
