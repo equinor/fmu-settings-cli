@@ -85,7 +85,7 @@ def sync(
         )
         raise typer.Abort from e
 
-    changes = to_fmu.get_dir_diff(from_fmu.path.parent)
+    changes = to_fmu.get_dir_diff(from_fmu)
 
     if all(len(change_list) == 0 for change_list in changes.values()):
         success("No changes detected.")
@@ -106,5 +106,5 @@ def sync(
     if not confirmed:
         raise typer.Abort
 
-    to_fmu.sync_dir(from_fmu.path.parent)
+    to_fmu.sync_dir(from_fmu)
     success(f"All done! {from_dir_abs} has been sync'd to {to_dir_abs}.")
