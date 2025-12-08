@@ -2,7 +2,7 @@
 
 from typing import Any, Final
 
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -64,11 +64,32 @@ def is_complex_change(old_val: Any, new_val: Any) -> bool:
     return False
 
 
-def add_model_to_panel_content(model: BaseModel, indent: int = 0) -> list[str]:
-    """Recursively build panel content line for a BaseModel."""
+def _add_root_model_to_panel_content(
+    model: RootModel[Any], indent: int = 0
+) -> list[str]:
+    """Build and return panel content for a RootModel."""
+    if not isinstance(model, RootModel):
+        raise ValueError(f"Received {type(model)}, but a  RootModel is required")
+
     lines = []
     indent_str = "  " * indent
+    root_value = model.model_dump()
+    if isinstance(root_value, list) and is_list_of_models(model.root):
+        for item in model.root:
+            lines.append(f"{indent_str}[dim]- {type(item).__name__}[/dim]")
+            lines.extend(add_model_to_panel_content(item, indent + 1))
+    elif isinstance(root_value, dict):
+        for k, v in root_value.items():
+            lines.append(f"{indent_str}[bold]{k}:[/bold] {v}")
+    else:
+        lines.append(f"{indent_str}{root_value}")
+    return lines
 
+
+def _add_base_model_to_panel_content(model: BaseModel, indent: int = 0) -> list[str]:
+    """Build and return panel content for a BaseModel."""
+    lines = []
+    indent_str = "  " * indent
     for key, value in model.model_dump().items():
         actual_value = getattr(model, key)
 
@@ -91,8 +112,14 @@ def add_model_to_panel_content(model: BaseModel, indent: int = 0) -> list[str]:
                 lines.append(f"{indent_str} [dim]{k}:[/dim] {v}")
         else:
             lines.append(f"{indent_str}[bold]{key}:[/bold] {value}")
-
     return lines
+
+
+def add_model_to_panel_content(model: BaseModel, indent: int = 0) -> list[str]:
+    """Recursively build panel content line for a BaseModel."""
+    if isinstance(model, RootModel):
+        return _add_root_model_to_panel_content(model, indent)
+    return _add_base_model_to_panel_content(model, indent)
 
 
 def render_basemodel_panel(

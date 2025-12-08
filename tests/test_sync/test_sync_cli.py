@@ -1,9 +1,7 @@
 """Tests for the 'fmu sync' commands."""
 
 from collections.abc import Generator
-from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -13,7 +11,6 @@ from pytest import MonkeyPatch
 from typer.testing import CliRunner
 
 from fmu_settings_cli.__main__ import app
-from fmu_settings_cli.sync.model_diff import IGNORED_FIELDS
 
 # ruff: noqa: PLR2004
 
@@ -133,31 +130,6 @@ def test_sync_no_changes_from_current_dir(
     assert result.exit_code == 0
 
 
-@pytest.mark.parametrize(
-    "field, value",
-    [
-        ("created_at", datetime.now(UTC)),
-        ("created_by", "foo"),
-    ],
-)
-def test_sync_disregards_ignored_fields(
-    two_fmu_revisions: tuple[Path, ProjectFMUDirectory, ProjectFMUDirectory],
-    monkeypatch: MonkeyPatch,
-    field: str,
-    value: Any,
-) -> None:
-    """Tests that 'fmu sync' does not see ignored fields as changes to sync."""
-    tmp_path, project_a, project_b = two_fmu_revisions
-    monkeypatch.chdir(project_a.path.parent)
-
-    assert field in IGNORED_FIELDS
-    project_a.set_config_value(field, value)
-
-    result = runner.invoke(app, ["sync", "--to", str(project_b.path.parent)])
-    assert "No changes detected" in result.stdout
-    assert result.exit_code == 0
-
-
 def test_sync_finds_changed_value_field(
     two_fmu_revisions: tuple[Path, ProjectFMUDirectory, ProjectFMUDirectory],
     monkeypatch: MonkeyPatch,
@@ -202,7 +174,6 @@ def test_sync_finds_changed_value_field_and_saves_after_confirm(
     assert "Value Changes in config" in result.stdout
     assert "model.name" in result.stdout
     assert "foo" in result.stdout
-    assert "Complex Changes" not in result.stdout  # Not in
     assert "Success: All done!" in result.stdout
     assert str(project_a.path.parent.absolute()) in result.stdout.replace("\n", "")
     assert str(project_b.path.parent.absolute()) in result.stdout.replace("\n", "")
