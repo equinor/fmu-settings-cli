@@ -287,15 +287,15 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "fmu-settings-gui"
-version = "0.3.0"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/62/02da6b8b82f27498596de81c565e661d1a1aa1552aa120efee6aa5de0345/fmu_settings_gui-0.3.0.tar.gz", hash = "sha256:e4592e42db897b2985cf656a4e56d308fc6354ed05ee0c4cfb2dbdfa7fef7243", size = 657638, upload-time = "2025-11-04T07:50:10.066Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/38/67/ed0dacdb607c70dc3f591ff698b727bae9768f59fec5e16d7283252153e6/fmu_settings_gui-0.4.0.tar.gz", hash = "sha256:a163f7345a8331736ea85c4f84e1a3ba96acad684eb9bac75da4acedf05decd1", size = 704663, upload-time = "2026-01-06T06:48:38.765Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/78/3da6d6f145107b33f72a9277eb0676796e96532a7279ef181f9f088cfc31/fmu_settings_gui-0.3.0-py3-none-any.whl", hash = "sha256:217ca0c2f537b561adb3b9bf94eb2612ecc5de8fd94b4ccb4d7f963249757652", size = 464966, upload-time = "2025-11-04T07:50:08.696Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/1f/3ceb55ae4ca84c8bda0e0aafa45d7a089c70a23839611fb06c898df88a40/fmu_settings_gui-0.4.0-py3-none-any.whl", hash = "sha256:a889c5efd37404fffe04130feb58b4d5197db3c1dff700aea84b237786b95afb", size = 472393, upload-time = "2026-01-06T06:48:37.06Z" },
 ]
 
 [[package]]
