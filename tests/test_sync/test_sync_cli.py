@@ -5,7 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from fmu.datamodels.fmu_results.fields import CountryItem
+from fmu.datamodels.common import CountryItem
 from fmu.settings import ProjectFMUDirectory
 from pytest import MonkeyPatch
 from typer.testing import CliRunner

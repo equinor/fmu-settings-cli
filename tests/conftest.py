@@ -8,8 +8,18 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
+from fmu.datamodels.common import (
+    Asset,
+    CoordinateSystem,
+    CountryItem,
+    DiscoveryItem,
+    FieldItem,
+    Masterdata,
+    Smda,
+    StratigraphicColumn,
+)
+from fmu.datamodels.common.enums import Classification
 from fmu.datamodels.fmu_results import fields
-from fmu.datamodels.fmu_results.enums import Classification
 from fmu.datamodels.fmu_results.global_configuration import (
     Access,
     GlobalConfiguration,
@@ -191,27 +201,25 @@ def generate_strict_valid_globalconfiguration() -> Callable[[], GlobalConfigurat
     def _generate_cfg(  # noqa: PLR0913
         *,
         classification: Classification | None = Classification.internal,
-        asset: fields.Asset | None = None,
-        coordinate_system: fields.CoordinateSystem | None = None,
-        stratigraphic_column: fields.StratigraphicColumn | None = None,
-        country_items: list[fields.CountryItem] | None = None,
-        discovery_items: list[fields.DiscoveryItem] | None = None,
-        field_items: list[fields.FieldItem] | None = None,
+        asset: Asset | None = None,
+        coordinate_system: CoordinateSystem | None = None,
+        stratigraphic_column: StratigraphicColumn | None = None,
+        country_items: list[CountryItem] | None = None,
+        discovery_items: list[DiscoveryItem] | None = None,
+        field_items: list[FieldItem] | None = None,
         model: fields.Model | None = None,
     ) -> GlobalConfiguration:
         return GlobalConfiguration(
-            access=Access(
-                asset=asset or fields.Asset(name=""), classification=classification
-            ),
-            masterdata=fields.Masterdata(
-                smda=fields.Smda(
+            access=Access(asset=asset or Asset(name=""), classification=classification),
+            masterdata=Masterdata(
+                smda=Smda(
                     coordinate_system=(
                         coordinate_system
-                        or fields.CoordinateSystem(identifier="", uuid=uuid4())
+                        or CoordinateSystem(identifier="", uuid=uuid4())
                     ),
                     stratigraphic_column=(
                         stratigraphic_column
-                        or fields.StratigraphicColumn(identifier="", uuid=uuid4())
+                        or StratigraphicColumn(identifier="", uuid=uuid4())
                     ),
                     country=country_items or [],
                     discovery=discovery_items or [],
