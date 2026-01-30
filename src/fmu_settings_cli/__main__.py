@@ -5,6 +5,7 @@ import contextlib
 import typer
 from fmu.settings._init import init_user_fmu_directory
 
+from .copy.cli import copy_cmd
 from .init import init_cmd
 from .settings.cli import settings_app
 from .sync import sync_cmd
@@ -25,6 +26,7 @@ app = typer.Typer(
 )
 
 app.add_typer(init_cmd, name="init")
+app.add_typer(copy_cmd, name="copy")
 app.add_typer(sync_cmd, name="sync")
 app.add_typer(settings_app, name="settings")
 
