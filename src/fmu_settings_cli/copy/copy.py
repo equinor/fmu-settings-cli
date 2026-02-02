@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import getpass
+import shlex
 import shutil
 import subprocess
-import sys
 import tempfile
 import time
 from dataclasses import dataclass
 from multiprocessing import cpu_count
 from os.path import join
 from pathlib import Path
+
+import typer
 
 from fmu_settings_cli.prints import error, info, warning
 
@@ -24,15 +26,14 @@ with features:
 
 Usage:
 
-    fmu_copy_revision  (for menu based input)
+    fmu copy  (for menu based input)
 
     or
 
-    fmu_copy_revision --source 21.0.0 --target some --profile 3 --threads 6 --cleanup
-
+    fmu copy --source 21.0.0 --target some --profile 3 --threads 6 --cleanup
     or
 
-    fmu_copy_revision --source 21.0.0  (...other options are defaulted)
+    fmu copy --source 21.0.0  (...other options are defaulted)
 """
 
 USERMENU = """\
@@ -281,7 +282,7 @@ class CopyRunner:
                 "No valid folders to list. Are you in the correct folder "
                 "above your revisions? Or consider --all option to list all folders."
             )
-            sys.exit()
+            raise typer.Exit(code=1)
 
         self.folders = result
 
@@ -295,16 +296,16 @@ class CopyRunner:
             default = inum + 1
         try:
             select = int(input(f"\nChoose number, default is {default}: ") or default)
-        except ValueError:
+        except ValueError as err:
             error("Selection is not a number")
-            sys.exit()
+            raise typer.Exit(code=1) from err
 
         if select in range(1, len(self.folders) + 1):
             usefolder = self.folders[select - 1]
             info(f"Selection <{select}> seems valid, folder to use is <{usefolder}>")
         else:
             error("Invalid selection!")
-            sys.exit()
+            raise typer.Exit(code=1)
 
         self.source = usefolder
 
@@ -362,7 +363,7 @@ class CopyRunner:
                     "Current target exists but neither --cleanup or --merge is "
                     "applied on command line. So have to exit hard!\nSTOP!\n"
                 )
-                sys.exit()
+                raise typer.Exit(code=1)
 
     def menu_target_folder(self) -> None:
         """Print an interactive menu to the user for target."""
@@ -378,9 +379,9 @@ class CopyRunner:
         if self.source is None:
             raise RuntimeError("Source is not set")
 
-        lockfiles = Path(self.source).glob("rms/model/*/project_lock_file")
+        lockfiles = list(Path(self.source).glob("rms/model/*/project_lock_file"))
 
-        if len(list(lockfiles)) > 0:
+        if lockfiles:
             warning(
                 "Warning, it seems that one or more RMS projects have a lock file "
                 "and may perhaps be in a saving process..."
@@ -395,7 +396,7 @@ class CopyRunner:
                 )
                 if not answer.startswith(("y", "Y")):
                     warning("Stopped by user")
-                    sys.exit()
+                    raise typer.Exit(code=1)
 
             warning("Will continue...")
 
@@ -431,12 +432,11 @@ class CopyRunner:
             return disksum
 
         def _filesize(size: float) -> str:
-            units = ("B", "K", "M", "G")
-            for index, unit in enumerate(units):
-                if size < FILESIZE_BASE or index == len(units) - 1:
-                    return f"{size:.1f} {unit}"
+            for unit in ("B", "K", "M", "G"):  # noqa: B007
+                if size < FILESIZE_BASE:
+                    break
                 size /= FILESIZE_BASE
-            return f"{size:.1f} B"
+            return f"{size:.1f} {unit}"
 
         fsize = _get_size(self.source)
         info(f"\n  Size of existing revision is: {_filesize(fsize)}\n")
@@ -444,7 +444,7 @@ class CopyRunner:
         sourcekbytes = fsize // 1024
         if sourcekbytes > freekbytes:
             error("Not enough space left for copying! STOP!")
-            sys.exit()
+            raise typer.Exit(code=1)
 
         time.sleep(1)
 
@@ -503,66 +503,69 @@ class CopyRunner:
         if self.source is None or self.target is None:
             raise RuntimeError("Source/target not set")
 
-        tdir = tempfile.TemporaryDirectory()
-        scriptname = join(tdir.name, "rsync.sh")
-        filterpatternname = join(tdir.name, "filterpattern.txt")
-        dirfilterpatternname = join(tdir.name, "dirfilterpattern.txt")
+        with tempfile.TemporaryDirectory() as tdir:
+            scriptname = join(tdir, "rsync.sh")
+            filterpatternname = join(tdir, "filterpattern.txt")
+            dirfilterpatternname = join(tdir, "dirfilterpattern.txt")
 
-        Path(scriptname).write_text(SHELLSCRIPT, encoding="utf8")
-        Path(filterpatternname).write_text(self.filter, encoding="utf8")
-        Path(dirfilterpatternname).write_text(self.dirfilter, encoding="utf8")
+            Path(scriptname).write_text(SHELLSCRIPT, encoding="utf8")
+            Path(filterpatternname).write_text(self.filter, encoding="utf8")
+            Path(dirfilterpatternname).write_text(self.dirfilter, encoding="utf8")
 
-        self.nthreads = self.args.threads
-        if self.nthreads == DEFAULT_THREADS:
-            self.nthreads = cpu_count() - 1 if cpu_count() > 1 else 1
+            self.nthreads = self.args.threads
+            if self.nthreads == DEFAULT_THREADS:
+                self.nthreads = cpu_count() - 1 if cpu_count() > 1 else 1
 
-        info(
-            f"Doing copy with profile {self.profile} "
-            f"using {self.nthreads} CPU threads, please wait..."
-        )
+            info(
+                f"Doing copy with profile {self.profile} "
+                f"using {self.nthreads} CPU threads, please wait..."
+            )
 
-        rsyncargs = "-a -R --delete"
+            rsyncargs = ["-a", "-R", "--delete"]
 
-        if self.args.dryrun:
-            rsyncargs += " --dry-run -v"
+            if self.args.dryrun:
+                rsyncargs.extend(["--dry-run", "-v"])
 
-        if self.args.verbosity:
-            rsyncargs += " -v"
+            if self.args.verbosity:
+                rsyncargs.append("-v")
 
-        command = [
-            "sh",
-            scriptname,
-            self.source,
-            self.target,
-            filterpatternname,
-            str(self.nthreads),
-            str(rsyncargs),
-            str(self.keepfolders),
-            dirfilterpatternname,
-        ]
+            rsyncargs_str = shlex.join(rsyncargs)
 
-        process = subprocess.run(
-            command,
-            check=True,
-            shell=False,
-            capture_output=True,
-            text=True,
-        )
-        stdout = process.stdout.splitlines()
-        stderr = process.stderr.splitlines()
+            command = [
+                "sh",
+                scriptname,
+                self.source,
+                self.target,
+                filterpatternname,
+                str(self.nthreads),
+                rsyncargs_str,
+                str(self.keepfolders),
+                dirfilterpatternname,
+            ]
 
-        info("\n".join(stdout[0:-2]))
+            process = subprocess.run(
+                command,
+                check=True,
+                shell=False,
+                capture_output=True,
+                text=True,
+            )
+            stdout = process.stdout.splitlines()
+            stderr = process.stderr.splitlines()
 
-        if process.returncode != 0 or stderr:
-            warning("\n".join(stderr))
+            info("\n".join(stdout[:-2]))
 
-        timing_seconds = float(stdout[-1])
-        timing = time.strftime(
-            "%H hours %M minutes %S seconds", time.gmtime(timing_seconds)
-        )
-        info(
-            f"\n ** The rsync process took {timing}, using {self.nthreads} threads **\n"
-        )
+            if process.returncode != 0 or stderr:
+                warning("\n".join(stderr))
+
+            timing_seconds = float(stdout[-1])
+            timing = time.strftime(
+                "%H hours %M minutes %S seconds", time.gmtime(timing_seconds)
+            )
+            info(
+                "\n ** The rsync process took "
+                f"{timing}, using {self.nthreads} threads **\n"
+            )
 
 
 def _resolve_profile(args: CopyArgs) -> int:
