@@ -47,8 +47,9 @@ def test_init_creates_user_fmu_if_exist(in_tmp_path: Path) -> None:
         result = runner.invoke(app, ["init"])
 
     assert result.exit_code == 1
-    assert "does not appear to be an FMU project" in result.stderr
-    assert "ert" in result.stderr
+    stderr = " ".join(result.stderr.split())
+    assert "does not appear to be an FMU project" in stderr
+    assert "ert" in stderr
     assert (home / ".fmu").exists()
 
 
@@ -56,8 +57,9 @@ def test_init_checks_if_fmu_dir_fails(in_tmp_path: Path) -> None:
     """Tests that 'fmu init' checks if the directory has required subdirectories."""
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 1
-    assert "does not appear to be an FMU project" in result.stderr
-    assert "ert" in result.stderr
+    stderr = " ".join(result.stderr.split())
+    assert "does not appear to be an FMU project" in stderr
+    assert "ert" in stderr
 
 
 def test_init_checks_if_fmu_dir_passes(in_tmp_path: Path) -> None:

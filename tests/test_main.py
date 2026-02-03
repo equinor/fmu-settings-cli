@@ -17,6 +17,7 @@ runner = CliRunner()
         ["init", "--help"],
         ["settings", "--help"],
         ["sync", "--help"],
+        ["copy", "--help"],
     ],
 )
 def test_cmds_create_user_fmu_if_not_exist(in_tmp_path: Path, cmd: list[str]) -> None:
