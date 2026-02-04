@@ -34,7 +34,7 @@ def sync(
             "--from",
             "-f",
             help="Path to FMU Setting revision to sync *from*",
-            default_factory=lambda: Path.cwd(),
+            default_factory=Path.cwd,
         ),
     ],
     ctx: typer.Context,
