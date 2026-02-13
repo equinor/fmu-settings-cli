@@ -12,8 +12,11 @@ from dataclasses import dataclass
 from multiprocessing import cpu_count
 from os.path import join
 from pathlib import Path
+from typing import Self
 
 import typer
+from fmu.settings import get_fmu_directory
+from fmu.settings._init import init_fmu_directory
 
 from fmu_settings_cli.prints import error, info, warning
 
@@ -567,6 +570,20 @@ class CopyRunner:
                 f"{timing}, using {self.nthreads} threads **\n"
             )
 
+    def log_copy_event_to_target(self: Self) -> None:
+        """Log a copy event to the targets changelog."""
+        assert self.target is not None
+        assert self.source is not None
+        try:
+            target_fmu_dir = get_fmu_directory(self.target)
+        except FileNotFoundError:
+            target_fmu_dir = init_fmu_directory(self.target)
+        except Exception as e:
+            error("Failed opening project fmu directory.", reason=str(e))
+            raise typer.Exit(1) from e
+
+        target_fmu_dir.changelog.log_copy_revision_to_changelog(Path(self.source))
+
 
 def _resolve_profile(args: CopyArgs) -> int:
     return int(args.profile or DEFAULT_PROFILE)
@@ -606,3 +623,5 @@ def run_copy(args: CopyArgs) -> None:
             f"profile <{runner.profile}> ..."
         )
         runner.do_rsyncing()
+
+    runner.log_copy_event_to_target()
