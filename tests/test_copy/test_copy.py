@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 import typer
+from fmu.settings import ProjectFMUDirectory, get_fmu_directory
 from typer.testing import CliRunner
 
 from fmu_settings_cli.__main__ import app
@@ -765,6 +766,94 @@ def test_do_rsyncing_builds_args_and_threads(
     rsyncargs = captured["command"][6]
     assert "--dry-run" in rsyncargs
     assert rsyncargs.count("-v") >= 2  # noqa: PLR2004
+
+
+def test_log_copy_event_to_target_fmu_dir(
+    two_fmu_revisions: tuple[Path, ProjectFMUDirectory, ProjectFMUDirectory],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tests that a copy event is logged to the targets .fmu directory changelog."""
+    tmp_path, source_revision, target_revision = two_fmu_revisions
+    monkeypatch.chdir(tmp_path)
+    runner = CopyRunner(
+        CopyArgs(),
+    )
+    runner.source = str(source_revision.base_path)
+    runner.target = str(target_revision.base_path)
+
+    source_changelog = source_revision.changelog.load()
+    source_changelog_size = len(source_changelog)
+    target_changelog = target_revision.changelog.load()
+    target_changelog_size = len(target_changelog)
+    assert source_changelog_size == target_changelog_size
+
+    runner.log_copy_event_to_target()
+
+    assert len(source_revision.changelog.load(force=True)) == source_changelog_size
+    changelog_target_revision = target_revision.changelog.load(force=True)
+    assert len(changelog_target_revision) == target_changelog_size + 1
+
+    copy_entry = changelog_target_revision[-1]
+    assert copy_entry.path == source_revision.base_path
+    assert copy_entry.change_type == "copy"
+
+
+def test_log_copy_event_to_target_missing_fmu_dir_creates_and_logs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tests that a .fmu directory is created and a copy event is logged.
+
+    When trying to log a copy event to a project revision without a
+    .fmu directory, a new .fmu directory is initialized and the
+    copy event is logged to its changelog.
+    """
+    monkeypatch.chdir(tmp_path)
+    source_revision_path = tmp_path / "a"
+    target_revision_path = tmp_path / "b"
+    source_revision_path.mkdir()
+    target_revision_path.mkdir()
+
+    runner = CopyRunner(
+        CopyArgs(),
+    )
+    runner.source = str(source_revision_path)
+    runner.target = str(target_revision_path)
+
+    runner.log_copy_event_to_target()
+
+    target_fmu_dir: ProjectFMUDirectory = get_fmu_directory(target_revision_path)
+    with pytest.raises(FileNotFoundError, match="No .fmu directory found"):
+        get_fmu_directory(source_revision_path)
+
+    changelog_target_revision = target_fmu_dir.changelog.load()
+    assert len(changelog_target_revision) == 1
+    copy_entry = changelog_target_revision[0]
+    assert copy_entry.path == source_revision_path
+    assert copy_entry.change_type == "copy"
+
+
+def test_log_copy_event_to_target_exits_with_corrupt_fmu_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tests that Exit is raised when trying to open a corrupt .fmu directory."""
+    monkeypatch.chdir(tmp_path)
+    source_revision_path = tmp_path / "a"
+    target_revision_path = tmp_path / "b"
+    source_revision_path.mkdir()
+    target_revision_path.mkdir()
+
+    runner = CopyRunner(
+        CopyArgs(),
+    )
+    runner.source = str(source_revision_path)
+    runner.target = str(target_revision_path)
+
+    # Make the .fmu folder currupt
+    with open(target_revision_path / ".fmu", "w") as f:
+        f.write("Corrupt .fmu content")
+
+    with pytest.raises(typer.Exit, match="1"):
+        runner.log_copy_event_to_target()
 
 
 def test_run_copy_missing_target_proposal(monkeypatch: pytest.MonkeyPatch) -> None:
