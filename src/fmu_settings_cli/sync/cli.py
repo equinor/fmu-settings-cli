@@ -80,22 +80,22 @@ def sync(
         changes = to_fmu.get_dir_diff(from_fmu)
     except ValueError as e:
         error(
-            "Unable to load .fmu resources for the revision you are syncing "
-            "[bold]to[/bold]",
+            "Unable to load .fmu resources for the revisions you are syncing",
             reason=str(e),
             suggestion=(
-                "Provide a path to the revision you are syncing [italic]to[/italic] "
-                "that contains a valid .fmu directory."
+                "Ensure both revisions passed with [italic]--from[/italic] and "
+                "[italic]--to[/italic] contain valid .fmu resources."
             ),
         )
         raise typer.Abort from e
     except Exception as e:
         error(
-            "Unable to find the .fmu directory to sync [bold]to[/bold]",
+            "Unable to compare .fmu resources between [bold]from[/bold] and "
+            "[bold]to[/bold] revisions",
             reason=str(e),
             suggestion=(
-                "Provide a path to the revision you are syncing [italic]to[/italic], "
-                "i.e. a master revision directory."
+                "Ensure both revisions passed with [italic]--from[/italic] and "
+                "[italic]--to[/italic] contain readable .fmu directories."
             ),
         )
         raise typer.Abort from e

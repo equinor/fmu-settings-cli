@@ -61,7 +61,7 @@ def test_sync_invalid_to_dir_config_json_raises_validation_error(
     )
 
     assert (
-        "Unable to load .fmu resources for the revision you are syncing to"
+        "Unable to load .fmu resources for the revisions you are syncing"
         in result.stderr
     )
     assert (
@@ -85,7 +85,7 @@ def test_sync_invalid_to_dir_config_content_raises_validation_error(
         app, ["sync", "--to", str(project_b.path.parent)], input="y\n"
     )
     assert (
-        "Unable to load .fmu resources for the revision you are syncing to"
+        "Unable to load .fmu resources for the revisions you are syncing"
         in result.stderr
     )
     assert (
