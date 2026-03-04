@@ -23,7 +23,7 @@ def test_sync_cmd_with_help(patch_ensure_port: Generator[None]) -> None:
 
     assert result.exit_code == 0
     assert "Usage: fmu sync" in result.stdout
-    assert "Sync the settings and configuration" in result.stdout
+    assert "Sync the contents of the .fmu folder" in result.stdout
     assert "--from" in result.stdout
     assert "--to" in result.stdout
 
@@ -60,7 +60,10 @@ def test_sync_invalid_to_dir_config_json_raises_validation_error(
         app, ["sync", "--to", str(project_b.path.parent)], input="y\n"
     )
 
-    assert "Unable to find an FMU Settings configuration to sync to" in result.stderr
+    assert (
+        "Unable to load .fmu resources for the revision you are syncing to"
+        in result.stderr
+    )
     assert (
         "Reason: Invalid JSON in resource file for 'ProjectConfigManager'"
         in result.stderr
@@ -81,7 +84,10 @@ def test_sync_invalid_to_dir_config_content_raises_validation_error(
     result = runner.invoke(
         app, ["sync", "--to", str(project_b.path.parent)], input="y\n"
     )
-    assert "Unable to find an FMU Settings configuration to sync to" in result.stderr
+    assert (
+        "Unable to load .fmu resources for the revision you are syncing to"
+        in result.stderr
+    )
     assert (
         "Reason: Invalid content in resource file for 'ProjectConfigManager"
         in result.stderr

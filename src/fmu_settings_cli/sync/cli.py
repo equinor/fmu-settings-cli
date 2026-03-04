@@ -5,12 +5,10 @@ from typing import Annotated
 
 import typer
 from fmu.settings import find_nearest_fmu_directory, get_fmu_directory
-from pydantic import ValidationError
 
 from fmu_settings_cli.prints import (
     error,
     success,
-    validation_error,
     warning,
 )
 
@@ -18,8 +16,8 @@ from .model_diff import display_model_diff
 
 sync_cmd = typer.Typer(
     help=(
-        "Sync the settings and configuration of one FMU revision to another.\n\n"
-        "Currently this syncs only the .fmu configuration files."
+        "Sync the contents of the .fmu folder from one FMU revision to another.\n\n"
+        "This command syncs resources in the .fmu folder."
     ),
     add_completion=True,
 )
@@ -67,16 +65,9 @@ def sync(
 
     try:
         to_fmu = get_fmu_directory(to_dir)
-    except ValidationError as e:
-        validation_error(
-            e,
-            "Unable to load [bold]to[/bold] FMU Directory",
-            reason="Validation of its configuration failed.",
-            suggestion="You may have tried to sync to an incorrect directory path.",
-        )
     except Exception as e:
         error(
-            "Unable to find an FMU Settings configuration to sync [bold]to[/bold]",
+            "Unable to find the .fmu directory to sync [bold]to[/bold]",
             reason=str(e),
             suggestion=(
                 "Provide a path to the revision you are syncing [italic]to[/italic], "
@@ -85,7 +76,29 @@ def sync(
         )
         raise typer.Abort from e
 
-    changes = to_fmu.get_dir_diff(from_fmu)
+    try:
+        changes = to_fmu.get_dir_diff(from_fmu)
+    except ValueError as e:
+        error(
+            "Unable to load .fmu resources for the revision you are syncing "
+            "[bold]to[/bold]",
+            reason=str(e),
+            suggestion=(
+                "Provide a path to the revision you are syncing [italic]to[/italic] "
+                "that contains a valid .fmu directory."
+            ),
+        )
+        raise typer.Abort from e
+    except Exception as e:
+        error(
+            "Unable to find the .fmu directory to sync [bold]to[/bold]",
+            reason=str(e),
+            suggestion=(
+                "Provide a path to the revision you are syncing [italic]to[/italic], "
+                "i.e. a master revision directory."
+            ),
+        )
+        raise typer.Abort from e
 
     if all(len(change_list) == 0 for change_list in changes.values()):
         success("No changes detected.")
