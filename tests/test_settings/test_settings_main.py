@@ -19,6 +19,8 @@ from fmu_settings_cli.settings.main import (
 def test_start_api_and_gui_processes(default_settings_args: Any) -> None:
     """Tests that all processes are submitted to the executor with expected args."""
     token = generate_auth_token()
+    expected_server_count = 2
+    expected_poll_count = 2
 
     with (
         patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
@@ -39,20 +41,21 @@ def test_start_api_and_gui_processes(default_settings_args: Any) -> None:
 
         mock_api_future = MagicMock()
         mock_gui_future = MagicMock()
-        mock_browser_future = MagicMock()
 
         mock_executor_instance.submit.side_effect = [
             mock_api_future,
             mock_gui_future,
-            mock_browser_future,
         ]
 
-        mock_as_completed.return_value = iter([mock_api_future])
+        mock_as_completed.side_effect = [
+            iter(()),
+            iter([mock_api_future]),
+        ]
 
         # Whew. Start it up then do assertions.
         start_api_and_gui(token, *default_settings_args.values())
 
-        mock_executor.assert_called_once_with(max_workers=3, initializer=init_worker)
+        mock_executor.assert_called_once_with(max_workers=2, initializer=init_worker)
 
         mock_executor_instance.submit.assert_any_call(
             mock_start_api_server,
@@ -71,15 +74,13 @@ def test_start_api_and_gui_processes(default_settings_args: Any) -> None:
             port=default_settings_args["gui_port"],
             log_level=default_settings_args["log_level"],
         )
-        mock_executor_instance.submit.assert_any_call(
-            mock_webbrowser_open,
+        assert mock_executor_instance.submit.call_count == expected_server_count
+        mock_webbrowser_open.assert_called_once_with(
             f"http://{default_settings_args['host']}:{default_settings_args['gui_port']}/#token={token}",
         )
 
-        mock_browser_future.result.assert_called_once()
-
         # Check this is called, but mostly because it blocks if not mocked
-        mock_as_completed.assert_called_once()
+        assert mock_as_completed.call_count == expected_poll_count
 
 
 def test_keyboard_interrupt_in_process_executor(
@@ -89,6 +90,7 @@ def test_keyboard_interrupt_in_process_executor(
     token = generate_auth_token()
     with (
         patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
+        patch("fmu_settings_cli.settings.main.as_completed") as mock_as_completed,
         patch(
             "fmu_settings_cli.settings.main.start_api_server"
         ) as mock_start_api_server,
@@ -106,13 +108,12 @@ def test_keyboard_interrupt_in_process_executor(
 
         mock_api_future = MagicMock()
         mock_gui_future = MagicMock()
-        mock_browser_future = MagicMock()
-        mock_browser_future.result.side_effect = KeyboardInterrupt()
+        mock_as_completed.return_value = iter(())
+        mock_webbrowser_open.side_effect = KeyboardInterrupt()
 
         mock_executor_instance.submit.side_effect = [
             mock_api_future,
             mock_gui_future,
-            mock_browser_future,
         ]
 
         start_api_and_gui(token, *default_settings_args.values())
@@ -168,10 +169,7 @@ def test_monitor_api_or_gui_server_system_exits(
             "fmu_settings_cli.settings.main.start_gui_server",
             new_callable=lambda *args, **kwargs: gui_fn,
         ),
-        patch(
-            "fmu_settings_cli.settings.main.webbrowser.open",
-            new_callable=lambda *args, **kwargs: _return_true,
-        ),
+        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
     ):
         start_api_and_gui(token, *default_settings_args.values())
 
@@ -179,6 +177,7 @@ def test_monitor_api_or_gui_server_system_exits(
     stderr = captured.err.replace("\n", " ").replace("  ", " ")
     assert f"Error: {failed_service} exited with exit code 1." in stderr
     assert f"port {required_port}" in stderr
+    mock_webbrowser_open.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -205,16 +204,14 @@ def test_monitor_api_or_gui_server_exits_unexpectedly(
             "fmu_settings_cli.settings.main.start_gui_server",
             new_callable=lambda *args, **kwargs: gui_fn,
         ),
-        patch(
-            "fmu_settings_cli.settings.main.webbrowser.open",
-            new_callable=lambda *args, **kwargs: _return_true,
-        ),
+        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
     ):
         start_api_and_gui(token, *default_settings_args.values())
 
     captured = capsys.readouterr()
     stderr = captured.err.replace("\n", " ").replace("  ", " ")
     assert f"Error: {failed_service} unexpectedly exited." in stderr
+    mock_webbrowser_open.assert_not_called()
 
 
 def _raises_exception(*args: Any, **kwargs: Any) -> None:
@@ -246,13 +243,11 @@ def test_monitor_api_or_gui_server_raises_exception(
             "fmu_settings_cli.settings.main.start_gui_server",
             new_callable=lambda *args, **kwargs: gui_fn,
         ),
-        patch(
-            "fmu_settings_cli.settings.main.webbrowser.open",
-            new_callable=lambda *args, **kwargs: _return_true,
-        ),
+        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
     ):
         start_api_and_gui(token, *default_settings_args.values())
 
     captured = capsys.readouterr()
     stderr = captured.err.replace("\n", " ")
     assert f"Error: {failed_service} failed with: foo" in stderr
+    mock_webbrowser_open.assert_not_called()
