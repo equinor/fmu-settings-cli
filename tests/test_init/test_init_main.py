@@ -146,16 +146,42 @@ def test_init_adds_global_variables_with_masterdata(
 
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 0
-    assert "Success: Successfully imported masterdata" in result.stdout
-    assert "Success: All done!" in result.stdout
-    assert "Info: Project stratigraphy was not imported by 'fmu init'." in result.stdout
-    assert "Open 'fmu settings' to import stratigraphy from RMS" in result.stdout
+    stdout = " ".join(result.stdout.split())
+    assert "Success: Successfully imported access, masterdata, model from" in stdout
+    assert "fmuconfig/output/global_variables.yml" in stdout
+    assert "Success: All done!" in stdout
+    assert "Info: Project stratigraphy was not imported by 'fmu init'." in stdout
+    assert "Open 'fmu settings' to import stratigraphy from RMS" in stdout
 
     fmu_dir = find_nearest_fmu_directory()
     fmu_dir_cfg = fmu_dir.config.load()
     assert fmu_dir_cfg.masterdata == valid_global_cfg.masterdata
     assert fmu_dir_cfg.access is not None
     assert fmu_dir_cfg.model is not None
+
+
+def test_init_adds_input_global_config_with_masterdata(
+    in_fmu_project: Path,
+    generate_strict_valid_globalconfiguration: Callable[[], GlobalConfiguration],
+) -> None:
+    """Tests that 'fmu init' reports the input config file it imported from."""
+    tmp_path = in_fmu_project
+
+    valid_global_cfg = generate_strict_valid_globalconfiguration()
+
+    fmuconfig_in = tmp_path / "fmuconfig/input"
+    fmuconfig_in.mkdir(parents=True, exist_ok=True)
+    global_config_path = fmuconfig_in / "global_master_config.yml"
+    global_config_path.write_text(
+        yaml.dump(valid_global_cfg.model_dump(mode="json", by_alias=True))
+    )
+
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
+    stdout = " ".join(result.stdout.split())
+    assert "Success: Successfully imported access, masterdata, model from" in stdout
+    assert "fmuconfig/input/global_master_config.yml" in stdout
+    assert "Success: All done!" in stdout
 
 
 def test_init_skips_adding_global_variables_with_masterdata(
