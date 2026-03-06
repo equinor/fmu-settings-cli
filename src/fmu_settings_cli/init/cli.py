@@ -14,6 +14,7 @@ from rich.table import Table
 
 from fmu_settings_cli.prints import (
     error,
+    info,
     success,
     validation_error,
     validation_warning,
@@ -53,7 +54,7 @@ def is_fmu_project(path: Path) -> tuple[bool, list[str]]:
 
 
 @init_cmd.callback(invoke_without_command=True)
-def init(
+def init(  # noqa: PLR0912
     ctx: typer.Context,
     force: Annotated[
         bool,
@@ -123,7 +124,7 @@ def init(
         success("Successfully imported masterdata from global config/variables.")
 
     try:
-        init_fmu_directory(cwd, global_config=global_config)
+        fmu_dir = init_fmu_directory(cwd, global_config=global_config)
     except FileExistsError as e:
         error(
             "Unable to create .fmu directory.",
@@ -152,4 +153,12 @@ def init(
         )
         raise typer.Abort from e
 
+    if fmu_dir.config.load().masterdata is not None:
+        info(
+            "Project stratigraphy was not imported by 'fmu init'.",
+            suggestion=(
+                "Open 'fmu settings' to import stratigraphy from RMS and map it "
+                "to SMDA."
+            ),
+        )
     success("All done! You can now use the 'fmu settings' application.")

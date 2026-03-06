@@ -38,12 +38,13 @@ def test_success_and_info_print_to_stdout() -> None:
 def test_warning_and_error_print_to_stderr() -> None:
     """Tests that 'warning' and 'error' print as expected."""
     with patch("sys.stderr", new=StringIO()) as mock_stderr:
-        warning("Bad", reason="Because")
+        warning("Bad", reason="Because", suggestion="Do this next")
         error("Failed", suggestion="Fix it")
 
         err = mock_stderr.getvalue()
         assert "Warning: Bad" in err
         assert "Reason: Because" in err
+        assert "→ Do this next" in err
         assert "Error: Failed" in err
         assert "→ Fix it" in err
 

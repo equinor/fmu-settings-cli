@@ -112,7 +112,7 @@ def warning(
         suggestion: Optional suggestion or additional info after the reason
         **kwargs: Additional arguments to past to console.print().
     """
-    _print_stderr(_WARNING, *content, reason=reason, suggestion=reason, **kwargs)
+    _print_stderr(_WARNING, *content, reason=reason, suggestion=suggestion, **kwargs)
 
 
 def error(
