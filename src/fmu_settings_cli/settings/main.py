@@ -38,7 +38,7 @@ def start_api_and_gui(  # noqa: PLR0913 too many args
         reload: If True, the API will reload on any code changes
         log_level: The log level to give to uvicorn in both the API and GUI.
     """
-    with ProcessPoolExecutor(max_workers=3, initializer=init_worker) as executor:
+    with ProcessPoolExecutor(max_workers=2, initializer=init_worker) as executor:
         try:
             server_futures = {
                 "api": executor.submit(
@@ -59,15 +59,6 @@ def start_api_and_gui(  # noqa: PLR0913 too many args
                     log_level=log_level,
                 ),
             }
-
-            # Does not need to be executed as a separate process, but causes this
-            # function to be called _after_ starting API and GUI. It finishes
-            # immediately.
-            browser_future = executor.submit(
-                webbrowser.open,
-                create_authorized_url(token, host, gui_port),
-            )
-            browser_future.result()
 
             is_start_up = True
             while True:
@@ -110,6 +101,7 @@ def start_api_and_gui(  # noqa: PLR0913 too many args
                         # Defer this message until we are certain GUI/API have started
                         # without initial errors.
                         success("FMU Settings is running. Press CTRL+C to quit")
+                        webbrowser.open(create_authorized_url(token, host, gui_port))
                         is_start_up = False
                     continue
 
