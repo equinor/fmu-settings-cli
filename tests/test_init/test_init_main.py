@@ -148,6 +148,8 @@ def test_init_adds_global_variables_with_masterdata(
     assert result.exit_code == 0
     assert "Success: Successfully imported masterdata" in result.stdout
     assert "Success: All done!" in result.stdout
+    assert "Info: Project stratigraphy was not imported by 'fmu init'." in result.stdout
+    assert "Open 'fmu settings' to import stratigraphy from RMS" in result.stdout
 
     fmu_dir = find_nearest_fmu_directory()
     fmu_dir_cfg = fmu_dir.config.load()
