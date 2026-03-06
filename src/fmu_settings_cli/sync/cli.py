@@ -105,6 +105,8 @@ def sync(
         raise typer.Exit(0)
 
     for resource, change_list in changes.items():
+        if resource == "_changelog":
+            continue
         display_model_diff(resource, change_list)
 
     from_dir_abs = from_dir.absolute()
