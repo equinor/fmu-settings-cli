@@ -153,6 +153,7 @@ def test_sync_finds_changed_value_field(
         app, ["sync", "--to", str(project_b.path.parent)], input="n\n"
     )
     assert "Value Changes in config" in result.stdout
+    assert "_changelog" not in result.stdout
     assert "model.name" in result.stdout
     assert "foo" in result.stdout
     assert result.exit_code == 1
@@ -178,6 +179,7 @@ def test_sync_finds_changed_value_field_and_saves_after_confirm(
         app, ["sync", "--to", str(project_b.path.parent)], input="y\n"
     )
     assert "Value Changes in config" in result.stdout
+    assert "_changelog" not in result.stdout
     assert "model.name" in result.stdout
     assert "foo" in result.stdout
     assert "Success: All done!" in result.stdout
@@ -187,6 +189,32 @@ def test_sync_finds_changed_value_field_and_saves_after_confirm(
 
     # Does update it.
     assert project_b.config.load(force=True).model.name == "foo"  # type: ignore[union-attr]
+
+
+def test_sync_changelog_only_is_merged_without_being_displayed(
+    two_fmu_revisions: tuple[Path, ProjectFMUDirectory, ProjectFMUDirectory],
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Tests that changelog-only differences are synced but not rendered."""
+    tmp_path, project_a, project_b = two_fmu_revisions
+    monkeypatch.chdir(project_a.path.parent)
+
+    target_changelog_size = len(project_b.changelog.load())
+    project_a.changelog.log_copy_revision_to_changelog(project_a.base_path)
+
+    result = runner.invoke(
+        app, ["sync", "--to", str(project_b.path.parent)], input="y\n"
+    )
+
+    assert "Value Changes in _changelog" not in result.stdout
+    assert "Complex Changes in _changelog" not in result.stdout
+    assert "Success: All done!" in result.stdout
+    assert result.exit_code == 0
+
+    target_changelog = project_b.changelog.load(force=True)
+    assert len(target_changelog) == target_changelog_size + 2
+    assert target_changelog[-2].change_type == "copy"
+    assert target_changelog[-2].path == project_a.base_path
 
 
 def test_sync_finds_changed_complex_field_and_saves_after_confirm(
