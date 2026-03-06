@@ -26,6 +26,8 @@ def test_sync_cmd_with_help(patch_ensure_port: Generator[None]) -> None:
     assert "Sync the contents of the .fmu folder" in result.stdout
     assert "--from" in result.stdout
     assert "--to" in result.stdout
+    assert "current directory" in result.stdout
+    assert "bound method PathBase.cwd" not in result.stdout
 
 
 def test_sync_cmd_with_no_options() -> None:

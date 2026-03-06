@@ -33,6 +33,7 @@ def sync(
             "-f",
             help="Path to FMU Setting revision to sync *from*",
             default_factory=Path.cwd,
+            show_default="current directory",
         ),
     ],
     ctx: typer.Context,
