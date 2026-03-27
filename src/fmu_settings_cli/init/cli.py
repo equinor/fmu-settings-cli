@@ -129,10 +129,14 @@ def init(  # noqa: PLR0912
                     "Settings by running and opening 'fmu settings'."
                 ),
             )
-        except InvalidGlobalConfigurationError as e:
+        except InvalidGlobalConfigurationError:
             warning(
                 "Unable to import masterdata.",
-                reason=str(e),
+                reason=(
+                    "The global config contains data that is not valid SMDA "
+                    "masterdata. This can happen when the file contains placeholder "
+                    "values or Drogon data."
+                ),
                 suggestion=(
                     "You will need to establish valid SMDA masterdata in FMU "
                     "Settings by running and opening 'fmu settings'."
