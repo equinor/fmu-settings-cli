@@ -226,8 +226,13 @@ def test_init_raises_when_import_drogon_masterdata(
 
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 0
+    stderr = " ".join(result.stderr.split())
     assert "Warning: Unable to import masterdata" in result.stderr
-    assert "Reason: Invalid name in 'model': Drogon" in result.stderr
+    assert (
+        "Reason: The global config contains data that is not valid SMDA "
+        "masterdata." in stderr
+    )
+    assert "placeholder values or Drogon data" in stderr
     assert "Success: All done!" in result.stdout
 
 
