@@ -9,11 +9,12 @@ import pytest
 import yaml
 from fmu.datamodels.fmu_results.global_configuration import GlobalConfiguration
 from fmu.settings import find_nearest_fmu_directory
+from fmu.settings._init import REQUIRED_FMU_PROJECT_SUBDIRS, is_fmu_project
 from pydantic import ValidationError
 from typer.testing import CliRunner
 
 from fmu_settings_cli.__main__ import app
-from fmu_settings_cli.init.cli import REQUIRED_FMU_PROJECT_SUBDIRS, is_fmu_project
+from fmu_settings_cli.init.cli import _find_global_config_source
 
 runner = CliRunner()
 
@@ -21,9 +22,9 @@ runner = CliRunner()
 @pytest.mark.parametrize(
     "dirs, expected",
     [
-        (["foo"], (False, REQUIRED_FMU_PROJECT_SUBDIRS)),
-        (["foo/ert"], (False, REQUIRED_FMU_PROJECT_SUBDIRS)),
-        (["ertt"], (False, REQUIRED_FMU_PROJECT_SUBDIRS)),
+        (["foo"], (False, list(REQUIRED_FMU_PROJECT_SUBDIRS))),
+        (["foo/ert"], (False, list(REQUIRED_FMU_PROJECT_SUBDIRS))),
+        (["ertt"], (False, list(REQUIRED_FMU_PROJECT_SUBDIRS))),
         (REQUIRED_FMU_PROJECT_SUBDIRS, (True, [])),
     ],
 )
@@ -48,8 +49,11 @@ def test_init_creates_user_fmu_if_exist(in_tmp_path: Path) -> None:
 
     assert result.exit_code == 1
     stderr = " ".join(result.stderr.split())
-    assert "does not appear to be an FMU project" in stderr
-    assert "ert" in stderr
+    missing_dirs = ", ".join(
+        f"'{dir_name}'" for dir_name in REQUIRED_FMU_PROJECT_SUBDIRS
+    )
+    assert "Failed initializing .fmu directory." in stderr
+    assert f"Did not find: {missing_dirs}." in stderr
     assert (home / ".fmu").exists()
 
 
@@ -58,8 +62,11 @@ def test_init_checks_if_fmu_dir_fails(in_tmp_path: Path) -> None:
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 1
     stderr = " ".join(result.stderr.split())
-    assert "does not appear to be an FMU project" in stderr
-    assert "ert" in stderr
+    missing_dirs = ", ".join(
+        f"'{dir_name}'" for dir_name in REQUIRED_FMU_PROJECT_SUBDIRS
+    )
+    assert "Failed initializing .fmu directory." in stderr
+    assert f"Did not find: {missing_dirs}." in stderr
 
 
 def test_init_checks_if_fmu_dir_passes(in_tmp_path: Path) -> None:
@@ -148,10 +155,12 @@ def test_init_adds_global_variables_with_masterdata(
     assert result.exit_code == 0
     stdout = " ".join(result.stdout.split())
     assert "Success: Successfully imported access, masterdata, model from" in stdout
-    assert "fmuconfig/output/global_variables.yml" in stdout
     assert "Success: All done!" in stdout
     assert "Info: Project stratigraphy was not imported by 'fmu init'." in stdout
     assert "Open 'fmu settings' to import stratigraphy from RMS" in stdout
+    assert _find_global_config_source(tmp_path) == (
+        fmuconfig_out / "global_variables.yml"
+    )
 
     fmu_dir = find_nearest_fmu_directory()
     fmu_dir_cfg = fmu_dir.config.load()
@@ -180,35 +189,8 @@ def test_init_adds_input_global_config_with_masterdata(
     assert result.exit_code == 0
     stdout = " ".join(result.stdout.split())
     assert "Success: Successfully imported access, masterdata, model from" in stdout
-    assert "fmuconfig/input/global_master_config.yml" in stdout
     assert "Success: All done!" in stdout
-
-
-def test_init_skips_adding_global_variables_with_masterdata(
-    in_fmu_project: Path,
-    generate_strict_valid_globalconfiguration: Callable[[], GlobalConfiguration],
-) -> None:
-    """Tests that 'fmu init' skips adding masterdata with skip flag."""
-    tmp_path = in_fmu_project
-
-    valid_global_cfg = generate_strict_valid_globalconfiguration()
-
-    fmuconfig_out = tmp_path / "fmuconfig/output"
-    fmuconfig_out.mkdir(parents=True, exist_ok=True)
-
-    (fmuconfig_out / "global_variables.yml").write_text(
-        yaml.dump(valid_global_cfg.model_dump(mode="json", by_alias=True))
-    )
-
-    result = runner.invoke(app, ["init", "--skip-config-import"])
-    assert result.exit_code == 0
-    assert "Success: All done!" in result.stdout
-
-    fmu_dir = find_nearest_fmu_directory()
-    fmu_dir_cfg = fmu_dir.config.load()
-    assert fmu_dir_cfg.masterdata is None
-    assert fmu_dir_cfg.access is None
-    assert fmu_dir_cfg.model is None
+    assert _find_global_config_source(tmp_path) == global_config_path
 
 
 def test_init_raises_when_import_drogon_masterdata(
@@ -235,26 +217,6 @@ def test_init_raises_when_import_drogon_masterdata(
     assert "placeholder values or Drogon data" in stderr
     assert "Success: All done!" in result.stdout
 
-
-def test_init_skips_raising_when_import_drogon_masterdata_with_skip(
-    in_fmu_project: Path, global_variables_with_masterdata: dict[str, Any]
-) -> None:
-    """Tests that 'fmu init' skips raising on Drogon masterdata with skip flag."""
-    tmp_path = in_fmu_project
-
-    fmuconfig_out = tmp_path / "fmuconfig/output"
-    fmuconfig_out.mkdir(parents=True, exist_ok=True)
-
-    (fmuconfig_out / "global_variables.yml").write_text(
-        yaml.dump(global_variables_with_masterdata)
-    )
-
-    result = runner.invoke(app, ["init", "--skip-config-import"])
-    assert result.exit_code == 0
-    # _not_ in
-    assert "Reason: Invalid name in 'model': Drogon" not in result.stderr
-    assert "Success: All done!" in result.stdout
-
     fmu_dir = find_nearest_fmu_directory()
     fmu_dir_cfg = fmu_dir.config.load()
     assert fmu_dir_cfg.masterdata is None
@@ -267,7 +229,7 @@ def test_init_fmu_dir_exists_error(in_fmu_project: Path) -> None:
     fmu_dir = in_fmu_project / ".fmu"
     fmu_dir.mkdir()
 
-    result = runner.invoke(app, ["init", "--skip-config-import"])
+    result = runner.invoke(app, ["init"])
     assert result.exit_code == 1
     assert "Error: Unable to create .fmu directory" in result.stderr
     assert ".fmu already exists" in result.stderr
@@ -280,7 +242,7 @@ def test_init_fmu_dir_no_permissions_error(in_fmu_project: Path) -> None:
     with patch(
         "fmu_settings_cli.init.cli.init_fmu_directory", side_effect=PermissionError
     ):
-        result = runner.invoke(app, ["init", "--skip-config-import"])
+        result = runner.invoke(app, ["init"])
     assert result.exit_code == 1
     assert "Error: Unable to create .fmu directory" in result.stderr
     assert "lacking permissions to create" in result.stderr
@@ -296,7 +258,7 @@ def test_init_fmu_dir_validation_error(in_fmu_project: Path) -> None:
         "fmu_settings_cli.init.cli.init_fmu_directory",
         side_effect=ValidationError("Foo", []),
     ):
-        result = runner.invoke(app, ["init", "--skip-config-import"])
+        result = runner.invoke(app, ["init"])
     assert result.exit_code == 1
 
     assert "Error: Unable to create .fmu directory" in result.stderr
@@ -309,7 +271,7 @@ def test_init_fmu_dir_some_error(in_fmu_project: Path) -> None:
         "fmu_settings_cli.init.cli.init_fmu_directory",
         side_effect=ValueError("Foo"),
     ):
-        result = runner.invoke(app, ["init", "--skip-config-import"])
+        result = runner.invoke(app, ["init"])
     assert result.exit_code == 1
 
     assert "Error: Unable to create .fmu directory" in result.stderr
