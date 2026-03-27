@@ -31,7 +31,7 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
     "fmu-datamodels",
-    "fmu-settings>=0.28.0",
+    "fmu-settings>=0.28.0", # minimum version with project path validation in `fmu init` 
     "fmu-settings-api",
     "fmu-settings-gui",
     "rich",
