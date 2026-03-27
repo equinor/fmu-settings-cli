@@ -577,7 +577,7 @@ class CopyRunner:
         try:
             target_fmu_dir = get_fmu_directory(self.target)
         except FileNotFoundError:
-            target_fmu_dir = init_fmu_directory(self.target)
+            target_fmu_dir = init_fmu_directory(self.target, force=True)
         except Exception as e:
             error("Failed opening project fmu directory.", reason=str(e))
             raise typer.Exit(1) from e
