@@ -5,7 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from fmu.datamodels.common import CountryItem
+from fmu.datamodels.common import DiscoveryItem
 from fmu.settings import ProjectFMUDirectory
 from pytest import MonkeyPatch
 from typer.testing import CliRunner
@@ -266,23 +266,28 @@ def test_sync_finds_changed_list_and_saves_after_confirm(
     monkeypatch.chdir(project_a.path.parent)
 
     uuid = uuid4()
-    country_item = CountryItem(identifier="Norway", uuid=uuid)
-    project_a.set_config_value("masterdata.smda.country", [country_item])
-    assert project_a.config.load(force=True).masterdata.smda.country[0] == country_item  # type: ignore[union-attr]
+    discovery_item = DiscoveryItem(short_identifier="DROGON", uuid=uuid)
+    project_a.set_config_value("masterdata.smda.discovery", [discovery_item])
+    project_b.set_config_value("masterdata.smda.discovery", [])
+    source_config = project_a.config.load(force=True)
+    assert source_config.masterdata is not None
+    assert source_config.masterdata.smda.discovery[0] == discovery_item
 
     result = runner.invoke(
         app, ["sync", "--to", str(project_b.path.parent)], input="y\n"
     )
 
     assert "Value Changes in config" in result.stdout
-    assert "masterdata.smda.country" in result.stdout
+    assert "masterdata.smda.discovery" in result.stdout
     assert "[]" in result.stdout
 
     assert "Complex Changes" in result.stdout
-    assert "Removed: masterdata.smda.country (old)" in result.stdout
+    assert "Removed: masterdata.smda.discovery (old)" in result.stdout
     assert "1 items" in result.stdout
-    assert "Added: masterdata.smda.country (new)" in result.stdout
+    assert "Added: masterdata.smda.discovery (new)" in result.stdout
     assert "0 items" in result.stdout
     assert result.exit_code == 0
 
-    assert project_b.config.load(force=True).masterdata.smda.country == [country_item]  # type: ignore[union-attr]
+    target_config = project_b.config.load(force=True)
+    assert target_config.masterdata is not None
+    assert target_config.masterdata.smda.discovery == [discovery_item]
