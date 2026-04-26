@@ -70,6 +70,20 @@ def init(  # noqa: PLR0912
 
     cwd = Path.cwd()
 
+    fmu_dir_path = cwd / ".fmu"
+    if fmu_dir_path.exists():
+        existing_fmu_reason = (
+            f"{fmu_dir_path} already exists"
+            if fmu_dir_path.is_dir()
+            else f"{fmu_dir_path} exists but is not a directory"
+        )
+        error(
+            "Unable to create .fmu directory.",
+            reason=existing_fmu_reason,
+            suggestion="You do not need to initialize a .fmu in this directory.",
+        )
+        raise typer.Abort
+
     global_config: GlobalConfiguration | None = None
     try:
         global_config = find_global_config(cwd)
