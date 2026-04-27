@@ -237,6 +237,28 @@ def test_init_fmu_dir_exists_error(in_fmu_project: Path) -> None:
     assert "Aborted." in result.stderr
 
 
+def test_init_fmu_dir_exists_skips_global_config_messages(
+    in_fmu_project: Path,
+    generate_strict_valid_globalconfiguration: Callable[[], GlobalConfiguration],
+) -> None:
+    """Tests that existing .fmu errors do not emit unrelated import messages."""
+    (in_fmu_project / ".fmu").mkdir()
+
+    valid_global_cfg = generate_strict_valid_globalconfiguration()
+    fmuconfig_out = in_fmu_project / "fmuconfig/output"
+    fmuconfig_out.mkdir(parents=True, exist_ok=True)
+    (fmuconfig_out / "global_variables.yml").write_text(
+        yaml.dump(valid_global_cfg.model_dump(mode="json", by_alias=True))
+    )
+
+    result = runner.invoke(app, ["init"])
+
+    assert result.exit_code == 1
+    assert "Successfully imported" not in result.stdout
+    assert "Unable to import masterdata" not in result.stderr
+    assert ".fmu already exists" in result.stderr
+
+
 def test_init_fmu_dir_no_permissions_error(in_fmu_project: Path) -> None:
     """Tests that lacking permissions to create .fmu gives error."""
     with patch(
