@@ -237,6 +237,21 @@ def test_init_fmu_dir_exists_error(in_fmu_project: Path) -> None:
     assert "Aborted." in result.stderr
 
 
+def test_init_fmu_path_exists_but_is_not_directory(in_fmu_project: Path) -> None:
+    """Tests that a non-directory .fmu path gives a specific error."""
+    fmu_path = in_fmu_project / ".fmu"
+    fmu_path.write_text("not a directory")
+
+    result = runner.invoke(app, ["init"])
+    stderr = "".join(result.stderr.split())
+
+    assert result.exit_code == 1
+    assert "Error: Unable to create .fmu directory" in result.stderr
+    assert f"{fmu_path} exists but is not a directory".replace(" ", "") in stderr
+    assert "You do not need to initialize a .fmu in this directory." in result.stderr
+    assert "Aborted." in result.stderr
+
+
 def test_init_fmu_dir_exists_skips_global_config_messages(
     in_fmu_project: Path,
     generate_strict_valid_globalconfiguration: Callable[[], GlobalConfiguration],
