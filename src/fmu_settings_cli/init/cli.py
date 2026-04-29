@@ -70,6 +70,23 @@ def init(  # noqa: PLR0912
 
     cwd = Path.cwd()
 
+    fmu_dir_path = cwd / ".fmu"
+    if fmu_dir_path.exists():
+        error(
+            "Unable to create .fmu directory.",
+            reason=(
+                f"{fmu_dir_path} already exists"
+                if fmu_dir_path.is_dir()
+                else f"{fmu_dir_path} exists but is not a directory"
+            ),
+            suggestion=(
+                "You do not need to initialize a .fmu in this directory."
+                if fmu_dir_path.is_dir()
+                else "Delete this file before initializing .fmu."
+            ),
+        )
+        raise typer.Abort
+
     global_config: GlobalConfiguration | None = None
     try:
         global_config = find_global_config(cwd)
@@ -121,8 +138,20 @@ def init(  # noqa: PLR0912
     except FileExistsError as e:
         error(
             "Unable to create .fmu directory.",
-            reason=str(e),
-            suggestion="You do not need to initialize a .fmu in this directory.",
+            reason=(
+                f"{fmu_dir_path} already exists"
+                if fmu_dir_path.exists() and fmu_dir_path.is_dir()
+                else (
+                    f"{fmu_dir_path} exists but is not a directory"
+                    if fmu_dir_path.exists()
+                    else str(e)
+                )
+            ),
+            suggestion=(
+                "You do not need to initialize a .fmu in this directory."
+                if fmu_dir_path.is_dir()
+                else "Delete this file before initializing .fmu."
+            ),
         )
         raise typer.Abort from e
     except PermissionError as e:
