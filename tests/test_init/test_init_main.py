@@ -248,7 +248,7 @@ def test_init_fmu_path_exists_but_is_not_directory(in_fmu_project: Path) -> None
     assert result.exit_code == 1
     assert "Error: Unable to create .fmu directory" in result.stderr
     assert f"{fmu_path} exists but is not a directory".replace(" ", "") in stderr
-    assert "You do not need to initialize a .fmu in this directory." in result.stderr
+    assert "Delete this file before initializing .fmu." in result.stderr
     assert "Aborted." in result.stderr
 
 
