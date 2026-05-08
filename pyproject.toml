@@ -122,3 +122,14 @@ combine-as-imports = true
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.uv]
+exclude-newer = "1 week"
+# Exclude specific package(s) we maintain for quick iteration
+
+[tool.uv.exclude-newer-package]
+"fmu-datamodels" = false
+"fmu-settings" = false
+"fmu-settings-api" = false
+"fmu-settings-gui" = false
+
