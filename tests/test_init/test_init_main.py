@@ -14,7 +14,6 @@ from pydantic import ValidationError
 from typer.testing import CliRunner
 
 from fmu_settings_cli.__main__ import app
-from fmu_settings_cli.init.cli import _find_global_config_source
 
 runner = CliRunner()
 
@@ -154,13 +153,13 @@ def test_init_adds_global_variables_with_masterdata(
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 0
     stdout = " ".join(result.stdout.split())
-    assert "Success: Successfully imported access, masterdata, model from" in stdout
+    assert (
+        "Success: Successfully imported access, masterdata, model from global "
+        "config." in stdout
+    )
     assert "Success: All done!" in stdout
     assert "Info: Project stratigraphy was not imported by 'fmu init'." in stdout
     assert "Open 'fmu settings' to import stratigraphy from RMS" in stdout
-    assert _find_global_config_source(tmp_path) == (
-        fmuconfig_out / "global_variables.yml"
-    )
 
     fmu_dir = find_nearest_fmu_directory()
     fmu_dir_cfg = fmu_dir.config.load()
@@ -173,7 +172,7 @@ def test_init_adds_input_global_config_with_masterdata(
     in_fmu_project: Path,
     generate_strict_valid_globalconfiguration: Callable[[], GlobalConfiguration],
 ) -> None:
-    """Tests that 'fmu init' reports the input config file it imported from."""
+    """Tests that 'fmu init' reports successful input config import."""
     tmp_path = in_fmu_project
 
     valid_global_cfg = generate_strict_valid_globalconfiguration()
@@ -188,9 +187,11 @@ def test_init_adds_input_global_config_with_masterdata(
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 0
     stdout = " ".join(result.stdout.split())
-    assert "Success: Successfully imported access, masterdata, model from" in stdout
+    assert (
+        "Success: Successfully imported access, masterdata, model from global "
+        "config." in stdout
+    )
     assert "Success: All done!" in stdout
-    assert _find_global_config_source(tmp_path) == global_config_path
 
 
 def test_init_raises_when_import_drogon_masterdata(
