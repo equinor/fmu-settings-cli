@@ -62,7 +62,7 @@ def init(  # noqa: PLR0912
             "Unable to create .fmu directory.",
             reason=(
                 f"{fmu_dir_path} already exists"
-                if fmu_dir_path.exists() and fmu_dir_path.is_dir()
+                if fmu_dir_path.is_dir()
                 else (
                     f"{fmu_dir_path} exists but is not a directory"
                     if fmu_dir_path.exists()
@@ -124,12 +124,9 @@ def init(  # noqa: PLR0912
         )
     else:
         if global_config:
-            imported_sections = ", ".join(
-                section
-                for section in ("access", "masterdata", "model")
-                if getattr(global_config, section) is not None
+            success(
+                "Successfully imported access, masterdata, model from global config."
             )
-            success(f"Successfully imported {imported_sections} from global config.")
 
     if fmu_dir.config.load().masterdata is not None:
         info(
