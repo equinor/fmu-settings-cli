@@ -8,8 +8,11 @@ from unittest.mock import patch
 import pytest
 import yaml
 from fmu.datamodels.fmu_results.global_configuration import GlobalConfiguration
-from fmu.settings import find_nearest_fmu_directory
-from fmu.settings._init import REQUIRED_FMU_PROJECT_SUBDIRS, is_fmu_project
+from fmu.settings import (
+    REQUIRED_FMU_PROJECT_SUBDIRS,
+    find_nearest_fmu_directory,
+)
+from fmu.settings._init import is_fmu_project
 from pydantic import ValidationError
 from typer.testing import CliRunner
 

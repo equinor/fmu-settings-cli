@@ -15,8 +15,7 @@ from pathlib import Path
 from typing import Self
 
 import typer
-from fmu.settings import get_fmu_directory
-from fmu.settings._init import init_fmu_directory
+from fmu.settings import get_fmu_directory, init_fmu_directory
 
 from fmu_settings_cli.prints import error, info, warning
 

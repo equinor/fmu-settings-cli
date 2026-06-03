@@ -4,12 +4,10 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from fmu.settings._global_config import (
+from fmu.settings import (
+    InvalidFMUProjectPathError,
     InvalidGlobalConfigurationError,
     find_global_config,
-)
-from fmu.settings._init import (
-    InvalidFMUProjectPathError,
     init_fmu_directory,
 )
 from pydantic import ValidationError

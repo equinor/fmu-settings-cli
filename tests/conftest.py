@@ -26,8 +26,11 @@ from fmu.datamodels.fmu_results.global_configuration import (
     Stratigraphy,
     StratigraphyElement,
 )
-from fmu.settings import ProjectFMUDirectory
-from fmu.settings._init import REQUIRED_FMU_PROJECT_SUBDIRS, init_fmu_directory
+from fmu.settings import (
+    REQUIRED_FMU_PROJECT_SUBDIRS,
+    ProjectFMUDirectory,
+    init_fmu_directory,
+)
 from pytest import MonkeyPatch
 
 from fmu_settings_cli.settings import constants

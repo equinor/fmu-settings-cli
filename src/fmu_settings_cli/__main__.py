@@ -3,7 +3,7 @@
 import contextlib
 
 import typer
-from fmu.settings._init import init_user_fmu_directory
+from fmu.settings import init_user_fmu_directory
 
 from .copy.cli import copy_cmd
 from .init import init_cmd
