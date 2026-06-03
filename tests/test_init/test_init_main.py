@@ -5,39 +5,18 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-import pytest
 import yaml
 from fmu.datamodels.fmu_results.global_configuration import GlobalConfiguration
 from fmu.settings import (
     REQUIRED_FMU_PROJECT_SUBDIRS,
     find_nearest_fmu_directory,
 )
-from fmu.settings._init import is_fmu_project
 from pydantic import ValidationError
 from typer.testing import CliRunner
 
 from fmu_settings_cli.__main__ import app
 
 runner = CliRunner()
-
-
-@pytest.mark.parametrize(
-    "dirs, expected",
-    [
-        (["foo"], (False, list(REQUIRED_FMU_PROJECT_SUBDIRS))),
-        (["foo/ert"], (False, list(REQUIRED_FMU_PROJECT_SUBDIRS))),
-        (["ertt"], (False, list(REQUIRED_FMU_PROJECT_SUBDIRS))),
-        (REQUIRED_FMU_PROJECT_SUBDIRS, (True, [])),
-    ],
-)
-def test_is_fmu_project(
-    dirs: list[str], expected: tuple[bool, list[str]], in_tmp_path: Path
-) -> None:
-    """Tests is_fmu_project."""
-    for dir_ in dirs:
-        (in_tmp_path / dir_).mkdir(parents=True, exist_ok=True)
-
-    assert is_fmu_project(in_tmp_path) == expected
 
 
 def test_init_creates_user_fmu_if_exist(in_tmp_path: Path) -> None:
