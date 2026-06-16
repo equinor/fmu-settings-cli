@@ -2,6 +2,8 @@
 
 import contextlib
 import signal
+import time
+import urllib.request
 import webbrowser
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -12,6 +14,8 @@ from ._utils import (
 )
 from .api_server import start_api_server
 from .gui_server import start_gui_server
+
+API_HEALTH_WAIT_TIMEOUT_SECONDS = 5
 
 
 def init_worker() -> None:  # pragma: no cover
@@ -61,6 +65,8 @@ def start_api_and_gui(  # noqa: PLR0913 too many args
             }
 
             is_start_up = True
+            api_health_url = f"http://{host}:{api_port}/health"
+            api_health_deadline = time.monotonic() + API_HEALTH_WAIT_TIMEOUT_SECONDS
             while True:
                 try:
                     # Check once a half second if either the GUI or API process have
@@ -98,11 +104,28 @@ def start_api_and_gui(  # noqa: PLR0913 too many args
                     # within the 0.5 second timeout, and so raises a TimeoutError. But
                     # grab all exceptions more broadly.
                     if is_start_up:
-                        # Defer this message until we are certain GUI/API have started
-                        # without initial errors.
-                        success("FMU Settings is running. Press CTRL+C to quit")
-                        webbrowser.open(create_authorized_url(token, host, gui_port))
-                        is_start_up = False
+                        try:
+                            with urllib.request.urlopen(
+                                api_health_url, timeout=0.5
+                            ) as response:
+                                is_api_ready = response.status == 200
+                        except OSError:
+                            is_api_ready = False
+
+                        if is_api_ready:
+                            success("FMU Settings is running. Press CTRL+C to quit")
+                            webbrowser.open(
+                                create_authorized_url(token, host, gui_port)
+                            )
+                            is_start_up = False
+                        elif time.monotonic() >= api_health_deadline:
+                            error(
+                                "API did not become ready within "
+                                f"{API_HEALTH_WAIT_TIMEOUT_SECONDS} seconds. "
+                                "Shutting down FMU Settings.",
+                                reason="Health check failed.",
+                            )
+                            break
                     continue
 
         except KeyboardInterrupt:
