@@ -152,7 +152,7 @@ def test_keyboard_interrupt_in_process_executor(
 def test_start_api_and_gui_does_not_open_browser_when_api_is_not_ready(
     default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
 ) -> None:
-    """Tests that the browser opens only after the API health check succeeds."""
+    """Tests that the browser stays closed when the API health check fails."""
     token = generate_auth_token()
 
     with (
@@ -187,6 +187,64 @@ def test_start_api_and_gui_does_not_open_browser_when_api_is_not_ready(
             iter(()),
             iter([mock_api_future]),
         ]
+
+        start_api_and_gui(token, *default_settings_args.values())
+
+    mock_start_api_server.assert_not_called()
+    mock_start_gui_server.assert_not_called()
+    mock_urlopen.assert_called_once_with(
+        f"http://{default_settings_args['host']}:"
+        f"{default_settings_args['api_port']}/health",
+        timeout=0.5,
+    )
+    mock_webbrowser_open.assert_not_called()
+
+    captured = capsys.readouterr()
+    stderr = captured.err.replace("\n", " ")
+    assert "API did not become ready within 5 seconds." in stderr
+    assert "Shutting down FMU Settings." in stderr
+    assert "Health check failed." in stderr
+
+
+def test_start_api_and_gui_does_not_open_browser_when_api_is_unhealthy(
+    default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
+) -> None:
+    """Tests that the browser stays closed when the API health status is not 200."""
+    token = generate_auth_token()
+
+    with (
+        patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
+        patch("fmu_settings_cli.settings.main.as_completed") as mock_as_completed,
+        patch(
+            "fmu_settings_cli.settings.main.start_api_server"
+        ) as mock_start_api_server,
+        patch(
+            "fmu_settings_cli.settings.main.start_gui_server"
+        ) as mock_start_gui_server,
+        patch("fmu_settings_cli.settings.main.urllib.request.urlopen") as mock_urlopen,
+        patch(
+            "fmu_settings_cli.settings.main.time.monotonic",
+            side_effect=[0, 6],
+        ),
+        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
+    ):
+        mock_executor_instance = MagicMock()
+        mock_executor.return_value.__enter__.return_value = mock_executor_instance
+
+        mock_api_future = MagicMock()
+        mock_gui_future = MagicMock()
+        mock_executor_instance.submit.side_effect = [
+            mock_api_future,
+            mock_gui_future,
+        ]
+        mock_as_completed.side_effect = [
+            iter(()),
+            iter([mock_api_future]),
+        ]
+
+        mock_health_response = MagicMock()
+        mock_health_response.__enter__.return_value.status = 503
+        mock_urlopen.return_value = mock_health_response
 
         start_api_and_gui(token, *default_settings_args.values())
 

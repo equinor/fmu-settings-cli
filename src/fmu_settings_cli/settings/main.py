@@ -100,9 +100,9 @@ def start_api_and_gui(  # noqa: PLR0913 too many args
                         error(f"{service} failed with: {e}")
                     break
                 except Exception:
-                    # This is the valid case, where the server future has not completed
-                    # within the 0.5 second timeout, and so raises a TimeoutError. But
-                    # grab all exceptions more broadly.
+                    # This is the valid case, where no server future completed within
+                    # the 0.5 second timeout. While starting up, keep probing the API
+                    # health endpoint and open the GUI only after it returns HTTP 200.
                     if is_start_up:
                         try:
                             with urllib.request.urlopen(
