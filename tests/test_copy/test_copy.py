@@ -826,8 +826,11 @@ def test_log_copy_event_to_target_missing_fmu_dir_creates_and_logs(
         get_fmu_directory(source_revision_path)
 
     changelog_target_revision = target_fmu_dir.changelog.load()
-    assert len(changelog_target_revision) == 1
-    copy_entry = changelog_target_revision[0]
+
+    # fmu-settings logs an init entry when the .fmu dir is created, and then the
+    # copy entry is logged, so the changelog has two entries
+    assert len(changelog_target_revision) == 2
+    copy_entry = changelog_target_revision[1]
     assert copy_entry.path == source_revision_path
     assert copy_entry.change_type == "copy"
 
