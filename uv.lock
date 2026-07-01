@@ -350,7 +350,7 @@ wheels = [
 
 [[package]]
 name = "fmu-settings"
-version = "0.34.0"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
@@ -360,14 +360,14 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/39/ec/4af9a865f30a608e79c99e80dfd729296f055a7981cfa9c3e63978aca8b3/fmu_settings-0.34.0.tar.gz", hash = "sha256:b732c1c81fb3bf6850eda3dad71ec310ef267a23d89a6b986a82de68b63ddbd4", size = 782609, upload-time = "2026-06-25T12:07:58.439Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/45/48/467e87b3d43ed01ed2171986bed0447aad615e4ffc3ab23e9002a14d7d76/fmu_settings-1.0.0.tar.gz", hash = "sha256:36c28b799dae639cc64ce2b896168ca7cb870384d32865a44c2248ae25dfb723", size = 783965, upload-time = "2026-06-29T09:59:40.064Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/66/be/5d1280d17e44e9ebb05f898c18892101d9b1bbdc40048455418569a02104/fmu_settings-0.34.0-py3-none-any.whl", hash = "sha256:0440012d7a65fa3c33d2d92eeacd920ddbc5db6ed91149e94e93868986924ba4", size = 63299, upload-time = "2026-06-25T12:07:56.824Z" },
+    { url = "https://files.pythonhosted.org/packages/96/00/80c5bbb439b258295914b36c58385c62c9acda9ca97e057c343be5af387e/fmu_settings-1.0.0-py3-none-any.whl", hash = "sha256:829657aeb63bbfd10a45227b827233096f8eeb89cfdede3cf982eb9b42717a31", size = 64017, upload-time = "2026-06-29T09:59:38.326Z" },
 ]
 
 [[package]]
 name = "fmu-settings-api"
-version = "0.9.0"
+version = "1.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi" },
@@ -382,9 +382,9 @@ dependencies = [
     { name = "structlog" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d7/da/322523d9b85282eb575f78e8baaa4466009629ed4f8acb92d144d7748251/fmu_settings_api-0.9.0.tar.gz", hash = "sha256:cc9c123a7884a367f51faaa52819b0cff565fa5e69b4f859fbca2717521b1cd9", size = 216172, upload-time = "2026-05-08T06:49:47.466Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/14/df2f36eceee6edfa05f2f87f9ddeb616d57255f9835168338e54250cc812/fmu_settings_api-1.1.0.tar.gz", hash = "sha256:17e9acb145550cfe52b4974aa15ece68096a94b05b98ce061697d5d889c9197e", size = 229867, upload-time = "2026-07-01T07:03:42.419Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/b2/bc0abbed0fd89c863e76fe0b6147b2323fbca9a19309da5191629f2f1a9a/fmu_settings_api-0.9.0-py3-none-any.whl", hash = "sha256:49f3fcd650a298fe43fb54fd1db0748e0ea83f84cd2bb66e810a385fb753b8d4", size = 78043, upload-time = "2026-05-08T06:49:46.088Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/d6/8d5eb72d6822fb8c3a3acad3aaec185553ae87ab8114ebef86c5b56e7552/fmu_settings_api-1.1.0-py3-none-any.whl", hash = "sha256:de528c0012c516da507e071853becd16daa53280f1048bdb95729ff87715ee23", size = 84656, upload-time = "2026-07-01T07:03:41.107Z" },
 ]
 
 [[package]]
@@ -432,15 +432,15 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "fmu-settings-gui"
-version = "0.9.0"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/34/440166025640e9b1e76f87be2ba4ef52367414339655531c2c1b7ee82bdd/fmu_settings_gui-0.9.0.tar.gz", hash = "sha256:d1edc1e07c572c2b5469b581eb598533c95b17f382c7abc59d7f8334a9724e08", size = 677794, upload-time = "2026-05-20T10:35:14.175Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/56/f3/0a772df4fc9d92c8e0b3dbcbfe75da75feed867ba68427cd0e9069a34d48/fmu_settings_gui-1.0.0.tar.gz", hash = "sha256:c5777abf9fc5e4d162b405a746c52de6915bd53607937bbb3a8afa146787c12d", size = 683998, upload-time = "2026-06-29T10:01:58.757Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/1d/48d3bb2f7f8aef6388e6c8bb88b34794f81d0b235cf63447c790215b6556/fmu_settings_gui-0.9.0-py3-none-any.whl", hash = "sha256:ce5b280fc3aafd605ceb134a127250409dca7438d75de0d97f0cda34d082b19d", size = 463773, upload-time = "2026-05-20T10:35:12.608Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/d9/86ddd3265a332fdd6f0fc1b4a7c421cb691b5963c7c137dd5106b87399e3/fmu_settings_gui-1.0.0-py3-none-any.whl", hash = "sha256:6fcfb19581ea9a7b1eb0fdeedc1a668ae2c106bebd9c08f1cfad6990b3679bb2", size = 478330, upload-time = "2026-06-29T10:01:56.973Z" },
 ]
 
 [[package]]
@@ -955,7 +955,7 @@ wheels = [
 
 [[package]]
 name = "pytest"
-version = "9.1.0"
+version = "9.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -964,9 +964,9 @@ dependencies = [
     { name = "pluggy" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/84/0e/b5858858d74958632c49b72cb25a3976ff9f632397626715be71c89d3971/pytest-9.1.0.tar.gz", hash = "sha256:41dd9148c08072446394cefd3d79701701335a9f4cae69ba92e39f6c7f5c061c", size = 1634181, upload-time = "2026-06-13T18:52:45.983Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e4/47/b9efed96c114afcfa3c9d3fe98a76a1d14c74a9e266d397cf6eb64be5e01/pytest-9.1.1.tar.gz", hash = "sha256:1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313", size = 1636369, upload-time = "2026-06-19T10:58:32.857Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/5a/ba30a81239b909821b3153e303e7def45178bf353da4f72380e6c5e8793b/pytest-9.1.0-py3-none-any.whl", hash = "sha256:8ebb0e7888bdf2bdfc602ec51f8f62d50200af37356c74e503c79a94f5c81f32", size = 386453, upload-time = "2026-06-13T18:52:44.045Z" },
+    { url = "https://files.pythonhosted.org/packages/24/25/1de2678b631f5a49215c6c96fff41ba892b0a34df68d6d80292b1b48aa7f/pytest-9.1.1-py3-none-any.whl", hash = "sha256:37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c", size = 386536, upload-time = "2026-06-19T10:58:31.347Z" },
 ]
 
 [[package]]
