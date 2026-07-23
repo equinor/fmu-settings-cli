@@ -4,6 +4,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    allow:
+      - dependency-type: "all"
+    groups:
+      all-deps:
+        patterns:
+          - "*"
   - package-ecosystem: "uv"
     directory: "/"
     schedule:
