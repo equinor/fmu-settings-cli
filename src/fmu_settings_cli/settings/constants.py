@@ -4,11 +4,11 @@ from typing import Literal, TypeAlias
 
 HOST: str = "localhost"
 API_PORT: int = 8001
-GUI_PORT: int = 8000
+APP_PORT: Literal[8000] = 8000
 
+# These are ports that are known to the Azure App Registration.
 GuiPort: TypeAlias = Literal[5173, 3000, 8000]
-APP_REG_PORTS: list[int] = [5173, 3000, 8000]
-"""These are ports that are known to the Azure App Registration."""
+AppPort: TypeAlias = Literal[5173, 3000, 8000]
 
 LogLevel: TypeAlias = Literal["debug", "info", "warning", "error", "critical"]
 

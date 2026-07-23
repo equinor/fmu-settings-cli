@@ -1,394 +1,182 @@
-"""Tests for the settings sub-command module."""
+"""Tests for the settings application server."""
 
-from collections.abc import Callable
-from time import sleep
 from typing import Any
 from unittest.mock import MagicMock, call, patch
 
-import pytest
 from pytest import CaptureFixture
 
 from fmu_settings_cli.settings._utils import generate_auth_token
-from fmu_settings_cli.settings.constants import API_PORT, GUI_PORT
-from fmu_settings_cli.settings.main import (
-    init_worker,
-    start_api_and_gui,
-)
+from fmu_settings_cli.settings.main import init_worker, start_app
 
 
-def test_start_api_and_gui_processes(default_settings_args: Any) -> None:
-    """Tests that all processes are submitted to the executor with expected args."""
+def _executor_with_future(mock_executor: MagicMock, future: MagicMock) -> MagicMock:
+    """Configure a mocked process executor and return its instance."""
+    executor = MagicMock()
+    executor._processes = {}
+    executor.submit.return_value = future
+    mock_executor.return_value.__enter__.return_value = executor
+    return executor
+
+
+def test_start_app_serves_gui_and_opens_browser_after_health_check(
+    default_settings_args: dict[str, Any],
+) -> None:
+    """The one server gets the GUI directory and opens only after HTTP 200."""
     token = generate_auth_token()
-    expected_server_count = 2
-    expected_poll_count = 2
+    future = MagicMock()
+    future.result.side_effect = [TimeoutError, None]
 
     with (
         patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
-        patch("fmu_settings_cli.settings.main.as_completed") as mock_as_completed,
-        patch(
-            "fmu_settings_cli.settings.main.start_api_server"
-        ) as mock_start_api_server,
-        patch(
-            "fmu_settings_cli.settings.main.start_gui_server"
-        ) as mock_start_gui_server,
+        patch("fmu_settings_cli.settings.main.start_api_server") as mock_start_server,
         patch("fmu_settings_cli.settings.main.urllib.request.urlopen") as mock_urlopen,
-        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
+        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_browser_open,
     ):
-        startup_calls = MagicMock()
-        startup_calls.attach_mock(mock_urlopen, "urlopen")
-        startup_calls.attach_mock(mock_webbrowser_open, "browser_open")
-        mock_health_response = MagicMock()
-        mock_health_response.__enter__.return_value.status = 200
-        mock_urlopen.return_value = mock_health_response
-        mock_webbrowser_open.return_value = True
-        mock_executor_instance = MagicMock()
-        # Patch over the ProcessPoolExecutor. This requires that objects submitted
-        # to it are pickle-able, and mock objects _are not_. So extra mocking is
-        # required.
-        mock_executor.return_value.__enter__.return_value = mock_executor_instance
+        executor = _executor_with_future(mock_executor, future)
+        health_response = MagicMock()
+        health_response.__enter__.return_value.status = 200
+        mock_urlopen.return_value = health_response
 
-        mock_api_future = MagicMock()
-        mock_gui_future = MagicMock()
+        ordered_calls = MagicMock()
+        ordered_calls.attach_mock(mock_urlopen, "health")
+        ordered_calls.attach_mock(mock_browser_open, "browser")
 
-        mock_executor_instance.submit.side_effect = [
-            mock_api_future,
-            mock_gui_future,
-        ]
+        start_app(token, **default_settings_args)
 
-        mock_as_completed.side_effect = [
-            iter(()),
-            iter([mock_api_future]),
-        ]
+    port = default_settings_args["port"]
+    host = default_settings_args["host"]
+    health_url = f"http://{host}:{port}/health"
+    browser_url = f"http://{host}:{port}/#token={token}"
 
-        # Whew. Start it up then do assertions.
-        start_api_and_gui(token, *default_settings_args.values())
-
-        expected_api_health_url = (
-            f"http://{default_settings_args['host']}:"
-            f"{default_settings_args['api_port']}/health"
-        )
-        expected_browser_url = (
-            f"http://{default_settings_args['host']}:"
-            f"{default_settings_args['gui_port']}/#token={token}"
-        )
-
-        mock_executor.assert_called_once_with(max_workers=2, initializer=init_worker)
-
-        mock_executor_instance.submit.assert_any_call(
-            mock_start_api_server,
-            token,
-            host=default_settings_args["host"],
-            port=default_settings_args["api_port"],
-            frontend_host=default_settings_args["host"],
-            frontend_port=default_settings_args["gui_port"],
-            reload=default_settings_args["reload"],
-            log_level=default_settings_args["log_level"],
-        )
-        mock_executor_instance.submit.assert_any_call(
-            mock_start_gui_server,
-            token,
-            host=default_settings_args["host"],
-            port=default_settings_args["gui_port"],
-            log_level=default_settings_args["log_level"],
-        )
-        assert mock_executor_instance.submit.call_count == expected_server_count
-        mock_urlopen.assert_called_once_with(expected_api_health_url, timeout=0.5)
-        mock_webbrowser_open.assert_called_once_with(expected_browser_url)
-        assert startup_calls.mock_calls.index(
-            call.urlopen(expected_api_health_url, timeout=0.5)
-        ) < startup_calls.mock_calls.index(call.browser_open(expected_browser_url))
-
-        # Check this is called, but mostly because it blocks if not mocked
-        assert mock_as_completed.call_count == expected_poll_count
+    mock_executor.assert_called_once_with(max_workers=1, initializer=init_worker)
+    executor.submit.assert_called_once_with(
+        mock_start_server,
+        token,
+        host=host,
+        port=port,
+        frontend_host=host,
+        frontend_port=port,
+        reload=False,
+        log_level=default_settings_args["log_level"],
+        frontend_directory=default_settings_args["frontend_directory"],
+    )
+    mock_urlopen.assert_called_once_with(health_url, timeout=0.5)
+    mock_browser_open.assert_called_once_with(browser_url)
+    assert ordered_calls.mock_calls.index(
+        call.health(health_url, timeout=0.5)
+    ) < ordered_calls.mock_calls.index(call.browser(browser_url))
 
 
-def test_keyboard_interrupt_in_process_executor(
+def test_start_app_stops_when_health_check_times_out(
     default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
 ) -> None:
-    """Tests that a KeyboardInterrupt issue sthe correct message."""
-    token = generate_auth_token()
-    with (
-        patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
-        patch("fmu_settings_cli.settings.main.as_completed") as mock_as_completed,
-        patch(
-            "fmu_settings_cli.settings.main.start_api_server"
-        ) as mock_start_api_server,
-        patch(
-            "fmu_settings_cli.settings.main.start_gui_server"
-        ) as mock_start_gui_server,
-        patch("fmu_settings_cli.settings.main.urllib.request.urlopen") as mock_urlopen,
-        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
-    ):
-        mock_health_response = MagicMock()
-        mock_health_response.__enter__.return_value.status = 200
-        mock_urlopen.return_value = mock_health_response
-        mock_start_api_server.side_effect = lambda *args, **kwargs: None
-        mock_start_gui_server.side_effect = lambda *args, **kwargs: None
-        mock_webbrowser_open.return_value = True
-
-        mock_executor_instance = MagicMock()
-        mock_executor.return_value.__enter__.return_value = mock_executor_instance
-
-        mock_api_future = MagicMock()
-        mock_gui_future = MagicMock()
-        mock_as_completed.side_effect = [
-            iter(()),
-            iter([mock_api_future]),
-        ]
-        mock_webbrowser_open.side_effect = KeyboardInterrupt()
-
-        mock_executor_instance.submit.side_effect = [
-            mock_api_future,
-            mock_gui_future,
-        ]
-
-        start_api_and_gui(token, *default_settings_args.values())
-
-    captured = capsys.readouterr()
-    stdout = captured.out.replace("\n", " ").replace("  ", " ")
-    assert "Shutting down FMU Settings ..." in stdout
-
-
-def test_start_api_and_gui_does_not_open_browser_when_api_is_not_ready(
-    default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
-) -> None:
-    """Tests that the browser stays closed when the API health check fails."""
-    token = generate_auth_token()
+    """A failed health check keeps the browser closed and stops the server."""
+    future = MagicMock()
+    future.result.side_effect = TimeoutError
 
     with (
         patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
-        patch("fmu_settings_cli.settings.main.as_completed") as mock_as_completed,
-        patch(
-            "fmu_settings_cli.settings.main.start_api_server"
-        ) as mock_start_api_server,
-        patch(
-            "fmu_settings_cli.settings.main.start_gui_server"
-        ) as mock_start_gui_server,
         patch(
             "fmu_settings_cli.settings.main.urllib.request.urlopen",
             side_effect=OSError,
         ) as mock_urlopen,
-        patch(
-            "fmu_settings_cli.settings.main.time.monotonic",
-            side_effect=[0, 6],
-        ),
-        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
+        patch("fmu_settings_cli.settings.main.time.monotonic", side_effect=[0, 6]),
+        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_browser_open,
     ):
-        mock_executor_instance = MagicMock()
-        mock_executor.return_value.__enter__.return_value = mock_executor_instance
+        executor = _executor_with_future(mock_executor, future)
+        start_app(generate_auth_token(), **default_settings_args)
 
-        mock_api_future = MagicMock()
-        mock_gui_future = MagicMock()
-        mock_executor_instance.submit.side_effect = [
-            mock_api_future,
-            mock_gui_future,
-        ]
-        mock_as_completed.side_effect = [
-            iter(()),
-            iter([mock_api_future]),
-        ]
-
-        start_api_and_gui(token, *default_settings_args.values())
-
-    mock_start_api_server.assert_not_called()
-    mock_start_gui_server.assert_not_called()
-    mock_urlopen.assert_called_once_with(
-        f"http://{default_settings_args['host']}:"
-        f"{default_settings_args['api_port']}/health",
-        timeout=0.5,
-    )
-    mock_webbrowser_open.assert_not_called()
-
-    captured = capsys.readouterr()
-    stderr = captured.err.replace("\n", " ")
-    assert "API did not become ready within 5 seconds." in stderr
+    mock_urlopen.assert_called_once()
+    mock_browser_open.assert_not_called()
+    future.cancel.assert_called_once()
+    executor.shutdown.assert_called_once_with(wait=False, cancel_futures=True)
+    stderr = " ".join(capsys.readouterr().err.split())
+    assert "Application did not become ready within 5 seconds." in stderr
     assert "Shutting down FMU Settings." in stderr
     assert "Health check failed." in stderr
 
 
-def test_start_api_and_gui_does_not_open_browser_when_api_is_unhealthy(
+def test_start_app_does_not_open_browser_for_unhealthy_response(
     default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
 ) -> None:
-    """Tests that the browser stays closed when the API health status is not 200."""
-    token = generate_auth_token()
+    """A non-200 health response does not open the browser."""
+    future = MagicMock()
+    future.result.side_effect = TimeoutError
 
     with (
         patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
-        patch("fmu_settings_cli.settings.main.as_completed") as mock_as_completed,
-        patch(
-            "fmu_settings_cli.settings.main.start_api_server"
-        ) as mock_start_api_server,
-        patch(
-            "fmu_settings_cli.settings.main.start_gui_server"
-        ) as mock_start_gui_server,
         patch("fmu_settings_cli.settings.main.urllib.request.urlopen") as mock_urlopen,
-        patch(
-            "fmu_settings_cli.settings.main.time.monotonic",
-            side_effect=[0, 6],
-        ),
-        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
+        patch("fmu_settings_cli.settings.main.time.monotonic", side_effect=[0, 6]),
+        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_browser_open,
     ):
-        mock_executor_instance = MagicMock()
-        mock_executor.return_value.__enter__.return_value = mock_executor_instance
+        _executor_with_future(mock_executor, future)
+        health_response = MagicMock()
+        health_response.__enter__.return_value.status = 503
+        mock_urlopen.return_value = health_response
+        start_app(generate_auth_token(), **default_settings_args)
 
-        mock_api_future = MagicMock()
-        mock_gui_future = MagicMock()
-        mock_executor_instance.submit.side_effect = [
-            mock_api_future,
-            mock_gui_future,
-        ]
-        mock_as_completed.side_effect = [
-            iter(()),
-            iter([mock_api_future]),
-        ]
-
-        mock_health_response = MagicMock()
-        mock_health_response.__enter__.return_value.status = 503
-        mock_urlopen.return_value = mock_health_response
-
-        start_api_and_gui(token, *default_settings_args.values())
-
-    mock_start_api_server.assert_not_called()
-    mock_start_gui_server.assert_not_called()
-    mock_urlopen.assert_called_once_with(
-        f"http://{default_settings_args['host']}:"
-        f"{default_settings_args['api_port']}/health",
-        timeout=0.5,
+    mock_browser_open.assert_not_called()
+    assert (
+        "Application did not become ready within 5 seconds." in capsys.readouterr().err
     )
-    mock_webbrowser_open.assert_not_called()
-
-    captured = capsys.readouterr()
-    stderr = captured.err.replace("\n", " ")
-    assert "API did not become ready within 5 seconds." in stderr
-    assert "Shutting down FMU Settings." in stderr
-    assert "Health check failed." in stderr
 
 
-def _bad_exit_early(*args: Any, **kwargs: Any) -> None:
-    """Used to test server failures.
-
-    These must be present outside of the test so that they can be pickled and sent to
-    child processes by the process executor.
-    """
-    sleep(0.1)
-    # This will cause this process to be first (next()) in the as_completed queue.
-    raise SystemExit(1)
-
-
-def _wait(*args: Any, **kwargs: Any) -> None:
-    """Used to test server failures."""
-    sleep(0.2)
-
-
-def _return_true(*args: Any, **kwargs: Any) -> bool:
-    """Used to test server failures."""
-    return True
-
-
-@pytest.mark.parametrize(
-    "failed_service, api_fn, gui_fn",
-    [("GUI", _wait, _bad_exit_early), ("API", _bad_exit_early, _wait)],
-)
-def test_monitor_api_or_gui_server_system_exits(
-    default_settings_args: dict[str, Any],
-    capsys: CaptureFixture[str],
-    failed_service: str,
-    gui_fn: Callable[[Any], None],
-    api_fn: Callable[[Any], None],
+def test_start_app_handles_keyboard_interrupt(
+    default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
 ) -> None:
-    """Tests that monitoring catches when the GUI/API server fails with SytemExit."""
-    token = generate_auth_token()
+    """CTRL+C stops the child server and reports the shutdown."""
+    future = MagicMock()
+    future.result.side_effect = KeyboardInterrupt
 
-    required_port = API_PORT if failed_service == "API" else GUI_PORT
-    # These must be wrapped in lambdas for pickling.
-    with (
-        patch(
-            "fmu_settings_cli.settings.main.start_api_server",
-            new_callable=lambda *args, **kwargs: api_fn,
-        ),
-        patch(
-            "fmu_settings_cli.settings.main.start_gui_server",
-            new_callable=lambda *args, **kwargs: gui_fn,
-        ),
-        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
-    ):
-        start_api_and_gui(token, *default_settings_args.values())
+    with patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor:
+        executor = _executor_with_future(mock_executor, future)
+        process = MagicMock()
+        executor._processes = {1: process}
+        start_app(generate_auth_token(), **default_settings_args)
 
-    captured = capsys.readouterr()
-    stderr = captured.err.replace("\n", " ").replace("  ", " ")
-    assert f"Error: {failed_service} exited with exit code 1." in stderr
-    assert f"port {required_port}" in stderr
-    mock_webbrowser_open.assert_not_called()
+    assert "Shutting down FMU Settings ..." in capsys.readouterr().out
+    process.terminate.assert_called_once()
 
 
-@pytest.mark.parametrize(
-    "failed_service, api_fn, gui_fn",
-    [("GUI", _wait, _return_true), ("API", _return_true, _wait)],
-)
-def test_monitor_api_or_gui_server_exits_unexpectedly(
-    default_settings_args: dict[str, Any],
-    capsys: CaptureFixture[str],
-    failed_service: str,
-    gui_fn: Callable[[Any], None],
-    api_fn: Callable[[Any], None],
+def test_start_app_reports_system_exit(
+    default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
 ) -> None:
-    """Tests that monitoring catches when the API server fails."""
-    token = generate_auth_token()
+    """A fatal Uvicorn exit includes the application port."""
+    future = MagicMock()
+    future.result.side_effect = SystemExit(1)
 
-    # These must be wrapped in lambdas for pickling.
-    with (
-        patch(
-            "fmu_settings_cli.settings.main.start_api_server",
-            new_callable=lambda *args, **kwargs: api_fn,
-        ),
-        patch(
-            "fmu_settings_cli.settings.main.start_gui_server",
-            new_callable=lambda *args, **kwargs: gui_fn,
-        ),
-        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
-    ):
-        start_api_and_gui(token, *default_settings_args.values())
+    with patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor:
+        _executor_with_future(mock_executor, future)
+        start_app(generate_auth_token(), **default_settings_args)
 
-    captured = capsys.readouterr()
-    stderr = captured.err.replace("\n", " ").replace("  ", " ")
-    assert f"Error: {failed_service} unexpectedly exited." in stderr
-    mock_webbrowser_open.assert_not_called()
+    stderr = capsys.readouterr().err.replace("\n", " ")
+    assert "Application server exited with exit code 1." in stderr
+    assert f"port {default_settings_args['port']}" in stderr
 
 
-def _raises_exception(*args: Any, **kwargs: Any) -> None:
-    """Kills a server start with an exception."""
-    raise OSError("foo")
-
-
-@pytest.mark.parametrize(
-    "failed_service, api_fn, gui_fn",
-    [("GUI", _wait, _raises_exception), ("API", _raises_exception, _wait)],
-)
-def test_monitor_api_or_gui_server_raises_exception(
-    default_settings_args: dict[str, Any],
-    capsys: CaptureFixture[str],
-    failed_service: str,
-    gui_fn: Callable[[Any], None],
-    api_fn: Callable[[Any], None],
+def test_start_app_reports_unexpected_exit(
+    default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
 ) -> None:
-    """Tests that monitoring catches when the API server fails."""
-    token = generate_auth_token()
+    """A server that returns is reported as an unexpected exit."""
+    future = MagicMock()
+    future.result.return_value = None
 
-    # These must be wrapped in lambdas for pickling.
-    with (
-        patch(
-            "fmu_settings_cli.settings.main.start_api_server",
-            new_callable=lambda *args, **kwargs: api_fn,
-        ),
-        patch(
-            "fmu_settings_cli.settings.main.start_gui_server",
-            new_callable=lambda *args, **kwargs: gui_fn,
-        ),
-        patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_webbrowser_open,
-    ):
-        start_api_and_gui(token, *default_settings_args.values())
+    with patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor:
+        _executor_with_future(mock_executor, future)
+        start_app(generate_auth_token(), **default_settings_args)
 
-    captured = capsys.readouterr()
-    stderr = captured.err.replace("\n", " ")
-    assert f"Error: {failed_service} failed with: foo" in stderr
-    mock_webbrowser_open.assert_not_called()
+    assert "Application server unexpectedly exited." in capsys.readouterr().err
+
+
+def test_start_app_reports_exception(
+    default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
+) -> None:
+    """An application server exception is reported."""
+    future = MagicMock()
+    future.result.side_effect = OSError("foo")
+
+    with patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor:
+        _executor_with_future(mock_executor, future)
+        start_app(generate_auth_token(), **default_settings_args)
+
+    assert "Application server failed with: foo" in capsys.readouterr().err
