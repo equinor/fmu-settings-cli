@@ -1,5 +1,6 @@
 """The 'settings' command."""
 
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -12,9 +13,16 @@ from ._utils import (
     generate_auth_token,
 )
 from .api_server import start_api_server
-from .constants import API_PORT, HOST, GuiPort, LogLevel
-from .gui_server import start_gui_server
-from .main import start_api_and_gui
+from .constants import API_PORT, APP_PORT, HOST, AppPort, GuiPort, LogLevel
+from .main import start_app
+
+
+def _get_static_directory() -> Path:
+    """Get the packaged GUI directory without loading it for API-only commands."""
+    from fmu_settings_gui import get_static_directory  # noqa: PLC0415 lazy load
+
+    return get_static_directory()
+
 
 settings_app = typer.Typer(
     help=(
@@ -27,35 +35,6 @@ settings_app = typer.Typer(
 
 
 @settings_app.command()
-def gui(
-    gui_port: Annotated[
-        GuiPort,
-        typer.Option("--gui-port", help="Port to run the GUI on.", show_default=True),
-    ] = 8000,
-    host: Annotated[
-        str,
-        typer.Option(
-            "--host",
-            help="Host to bind the API and GUI servers to.",
-            show_default=False,
-        ),
-    ] = HOST,
-    log_level: Annotated[
-        LogLevel,
-        typer.Option(
-            "--log-level",
-            help="The minimum log level to display in the terminal.",
-            envvar="FMU_SETTINGS_LOG_LEVEL",
-        ),
-    ] = "critical",
-) -> None:
-    """Start the FMU Settings GUI only. Used for development."""
-    ensure_port(gui_port)
-    token = generate_auth_token()
-    start_gui_server(token, host=host, port=gui_port, log_level=log_level)
-
-
-@settings_app.command()
 def api(  # noqa: PLR0913
     api_port: Annotated[
         int,
@@ -64,7 +43,7 @@ def api(  # noqa: PLR0913
     gui_port: Annotated[
         GuiPort,
         typer.Option("--gui-port", help="Port to run the GUI on.", show_default=True),
-    ] = 8000,
+    ] = APP_PORT,
     host: Annotated[
         str,
         typer.Option(
@@ -135,32 +114,24 @@ def api(  # noqa: PLR0913
 
 
 @settings_app.callback(invoke_without_command=True)
-def settings(  # noqa: PLR0913 too many args
+def settings(
     ctx: typer.Context,
-    api_port: Annotated[
-        int,
-        typer.Option("--api-port", help="Port to run the API on.", show_default=True),
-    ] = API_PORT,
-    gui_port: Annotated[
-        GuiPort,
-        typer.Option("--gui-port", help="Port to run the GUI on.", show_default=True),
-    ] = 8000,
+    port: Annotated[
+        AppPort,
+        typer.Option(
+            "--port",
+            help="Port to run the application on.",
+            show_default=True,
+        ),
+    ] = APP_PORT,
     host: Annotated[
         str,
         typer.Option(
             "--host",
-            help="Host to bind the API and GUI servers to.",
+            help="Host to bind the application server to.",
             show_default=False,
         ),
     ] = HOST,
-    reload: Annotated[
-        bool,
-        typer.Option(
-            "--reload",
-            help="Enable auto-reload. Used for development.",
-            show_default=False,
-        ),
-    ] = False,
     log_level: Annotated[
         LogLevel,
         typer.Option(
@@ -174,8 +145,13 @@ def settings(  # noqa: PLR0913 too many args
     if ctx.invoked_subcommand is not None:
         return
 
-    for port in [api_port, gui_port]:
-        ensure_port(port)
+    ensure_port(port)
 
     token = generate_auth_token()
-    start_api_and_gui(token, api_port, gui_port, host, reload, log_level)
+    start_app(
+        token,
+        port=port,
+        host=host,
+        log_level=log_level,
+        frontend_directory=_get_static_directory(),
+    )
