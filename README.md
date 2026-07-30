@@ -12,19 +12,16 @@ To launch the application simply run
 fmu settings
 ```
 
-To start only the API, run
+The command starts one server for both the API and the built GUI on port 8000,
+and opens the FMU Settings home page in your web browser.
+
+## GUI development
+
+To develop the GUI, start only the API. You can also use `--reload` if you
+change API code.
 
 ```bash
 fmu settings api
-```
-
-It is also possible to specify the port and if the API should be reloaded, as
-in during development.
-
-## Starting the API only
-
-```bash
-fmu settings api --port 8001
 ```
 
 By default the API will set CORS rules restricting requests to a default host
@@ -65,15 +62,7 @@ FMU_SETTINGS_PRINT_URL=true fmu-settings api --gui-port 5173
 Note that these additional flags are intended for development so they _only_ work
 with `fmu settings api` subcommand.
 
-## Starting the GUI only
-
-You can similarly start the GUI server:
-
-```bash
-fmu settings gui
-```
-
-## Developing
+## CLI development
 
 Clone and install into a virtual environment.
 

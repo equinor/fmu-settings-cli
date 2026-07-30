@@ -50,11 +50,10 @@ def default_settings_args() -> Generator[dict[str, Any]]:
     """Returns default arguments when running `fmu-settings`."""
     with patch.object(sys, "argv", ["fmu", "settings"]):
         yield {
-            "api_port": constants.API_PORT,
-            "gui_port": constants.GUI_PORT,
+            "port": constants.APP_PORT,
             "host": constants.HOST,
-            "reload": False,
             "log_level": "critical",
+            "frontend_directory": Path("/frontend"),
         }
 
 
