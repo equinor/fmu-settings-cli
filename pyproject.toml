@@ -32,8 +32,8 @@ dynamic = ["version"]
 dependencies = [
     "fmu-datamodels",
     "fmu-settings>=0.32.1", # minimum version with public init/global config API exports
-    "fmu-settings-api",
-    "fmu-settings-gui",
+    "fmu-settings-api>=1.2.0", # One server for API and GUI
+    "fmu-settings-gui>=1.1.0", # One server for API and GUI
     "rich",
     "typer",
 ]
