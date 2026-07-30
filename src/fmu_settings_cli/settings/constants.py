@@ -3,7 +3,6 @@
 from typing import Literal, TypeAlias
 
 HOST: str = "localhost"
-API_PORT: int = 8001
 APP_PORT: Literal[8000] = 8000
 
 # These are ports that are known to the Azure App Registration.

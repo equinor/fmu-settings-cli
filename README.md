@@ -20,13 +20,12 @@ To start only the API, run
 fmu settings api
 ```
 
-It is also possible to specify the port and if the API should be reloaded, as
-in during development.
+It is also possible to reload the API during development.
 
 ## Starting the API only
 
 ```bash
-fmu settings api --api-port 8001
+fmu settings api
 ```
 
 By default the API will set CORS rules restricting requests to a default host

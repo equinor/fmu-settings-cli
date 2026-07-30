@@ -4,13 +4,13 @@ from pathlib import Path
 
 from fmu_settings_cli.prints import info
 
-from .constants import API_PORT, APP_PORT, HOST
+from .constants import APP_PORT, HOST
 
 
 def start_api_server(  # noqa: PLR0913
     token: str,
     host: str = HOST,
-    port: int = API_PORT,
+    port: int = APP_PORT,
     frontend_host: str = HOST,
     frontend_port: int = APP_PORT,
     reload: bool = False,

@@ -13,7 +13,7 @@ from ._utils import (
     generate_auth_token,
 )
 from .api_server import start_api_server
-from .constants import API_PORT, APP_PORT, HOST, AppPort, GuiPort, LogLevel
+from .constants import APP_PORT, HOST, AppPort, GuiPort, LogLevel
 from .main import start_app
 
 
@@ -36,10 +36,6 @@ settings_app = typer.Typer(
 
 @settings_app.command()
 def api(  # noqa: PLR0913
-    api_port: Annotated[
-        int,
-        typer.Option("--api-port", help="Port to run the API on.", show_default=True),
-    ] = API_PORT,
     gui_port: Annotated[
         GuiPort,
         typer.Option("--gui-port", help="Port to run the GUI on.", show_default=True),
@@ -94,7 +90,7 @@ def api(  # noqa: PLR0913
     ] = "critical",
 ) -> None:
     """Start the FMU Settings API only. Used for development."""
-    ensure_port(api_port)
+    ensure_port(APP_PORT)
     token = generate_auth_token()
 
     if print_token:
@@ -105,7 +101,7 @@ def api(  # noqa: PLR0913
     start_api_server(
         token,
         host=host,
-        port=api_port,
+        port=APP_PORT,
         frontend_host=host,
         frontend_port=gui_port,
         reload=reload,

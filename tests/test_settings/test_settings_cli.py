@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 
 from fmu_settings_cli.__main__ import app
 from fmu_settings_cli.settings.cli import _get_static_directory
-from fmu_settings_cli.settings.constants import API_PORT, APP_PORT, HOST
+from fmu_settings_cli.settings.constants import APP_PORT, HOST
 
 # ruff: noqa: PLR2004
 
@@ -134,6 +134,7 @@ def test_settings_api_cmd_with_help(patch_ensure_port: Generator[None]) -> None:
     assert "--reload" in result.stdout
     assert "--print-token" in result.stdout
     assert "--print-url" in result.stdout
+    assert "--api-port" not in result.stdout
     assert "--log-level" in result.stdout
 
 
@@ -151,7 +152,7 @@ def test_settings_api_cmd_with_reload(
         kwargs = mock_start_api_server.call_args.kwargs
 
         assert args[0]  # Token
-        assert kwargs["port"] == API_PORT
+        assert kwargs["port"] == APP_PORT
         assert kwargs["frontend_port"] == APP_PORT
         assert kwargs["host"] == kwargs["frontend_host"] == HOST
         assert kwargs["reload"] is True

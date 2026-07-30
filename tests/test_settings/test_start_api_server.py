@@ -18,7 +18,7 @@ def test_start_api_server() -> None:
         mock_run_server.assert_called_once_with(
             token=token,
             host="localhost",
-            port=8001,
+            port=8000,
             frontend_host="localhost",
             frontend_port=8000,
             reload=False,
