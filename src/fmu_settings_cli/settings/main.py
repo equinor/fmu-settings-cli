@@ -15,7 +15,7 @@ from ._utils import (
 )
 from .api_server import start_api_server
 
-API_HEALTH_WAIT_TIMEOUT_SECONDS = 5
+API_HEALTH_WAIT_TIMEOUT_SECONDS = 30
 
 
 def init_worker() -> None:  # pragma: no cover

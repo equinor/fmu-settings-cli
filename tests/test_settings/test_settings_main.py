@@ -80,7 +80,7 @@ def test_start_app_stops_when_health_check_times_out(
             "fmu_settings_cli.settings.main.urllib.request.urlopen",
             side_effect=OSError,
         ) as mock_urlopen,
-        patch("fmu_settings_cli.settings.main.time.monotonic", side_effect=[0, 6]),
+        patch("fmu_settings_cli.settings.main.time.monotonic", side_effect=[0, 31]),
         patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_browser_open,
     ):
         executor = _executor_with_future(mock_executor, future)
@@ -91,7 +91,7 @@ def test_start_app_stops_when_health_check_times_out(
     future.cancel.assert_called_once()
     executor.shutdown.assert_called_once_with(wait=False, cancel_futures=True)
     stderr = " ".join(capsys.readouterr().err.split())
-    assert "Application did not become ready within 5 seconds." in stderr
+    assert "Application did not become ready within 30 seconds." in stderr
     assert "Shutting down FMU Settings." in stderr
     assert "Health check failed." in stderr
 
@@ -106,7 +106,7 @@ def test_start_app_does_not_open_browser_for_unhealthy_response(
     with (
         patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
         patch("fmu_settings_cli.settings.main.urllib.request.urlopen") as mock_urlopen,
-        patch("fmu_settings_cli.settings.main.time.monotonic", side_effect=[0, 6]),
+        patch("fmu_settings_cli.settings.main.time.monotonic", side_effect=[0, 31]),
         patch("fmu_settings_cli.settings.main.webbrowser.open") as mock_browser_open,
     ):
         _executor_with_future(mock_executor, future)
@@ -117,7 +117,7 @@ def test_start_app_does_not_open_browser_for_unhealthy_response(
 
     mock_browser_open.assert_not_called()
     assert (
-        "Application did not become ready within 5 seconds." in capsys.readouterr().err
+        "Application did not become ready within 30 seconds." in capsys.readouterr().err
     )
 
 
