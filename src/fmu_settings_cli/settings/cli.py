@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Annotated
+from uuid import uuid4
 
 import typer
 
@@ -80,6 +81,14 @@ def api(  # noqa: PLR0913
             envvar="FMU_SETTINGS_PRINT_URL",
         ),
     ] = False,
+    enable_telemetry: Annotated[
+        bool,
+        typer.Option(
+            "--telemetry",
+            help="Send API telemetry to Azure. Used for development testing.",
+            show_default=False,
+        ),
+    ] = False,
     log_level: Annotated[
         LogLevel,
         typer.Option(
@@ -106,6 +115,8 @@ def api(  # noqa: PLR0913
         frontend_port=gui_port,
         reload=reload,
         log_level=log_level,
+        enable_telemetry=enable_telemetry,
+        run_id=str(uuid4()) if enable_telemetry else None,
     )
 
 
@@ -150,4 +161,5 @@ def settings(
         host=host,
         log_level=log_level,
         frontend_directory=_get_static_directory(),
+        run_id=str(uuid4()),
     )

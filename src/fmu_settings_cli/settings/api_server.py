@@ -16,6 +16,8 @@ def start_api_server(  # noqa: PLR0913
     reload: bool = False,
     log_level: str = "critical",
     frontend_directory: Path | None = None,
+    enable_telemetry: bool = False,
+    run_id: str | None = None,
 ) -> None:
     """Starts the fmu-settings-api server.
 
@@ -28,6 +30,8 @@ def start_api_server(  # noqa: PLR0913
         reload: Auto-reload the API. Default False.
         log_level: The log level to give to uvicorn.
         frontend_directory: The directory that contains the built GUI.
+        enable_telemetry: Whether to send API telemetry through the site plugin.
+        run_id: The identifier shared by telemetry from one application run.
     """
     from fmu_settings_api import run_server  # noqa: PLC0415 lazy load
 
@@ -42,6 +46,8 @@ def start_api_server(  # noqa: PLR0913
             reload=reload,
             log_level=log_level,
             frontend_directory=frontend_directory,
+            enable_telemetry=enable_telemetry,
+            run_id=run_id,
         )
     except Exception as e:
         raise RuntimeError(f"Could not start API server: {e}") from e

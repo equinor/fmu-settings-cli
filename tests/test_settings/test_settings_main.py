@@ -59,6 +59,8 @@ def test_start_app_serves_gui_and_opens_browser_after_health_check(
         reload=False,
         log_level=default_settings_args["log_level"],
         frontend_directory=default_settings_args["frontend_directory"],
+        enable_telemetry=True,
+        run_id=default_settings_args["run_id"],
     )
     mock_urlopen.assert_called_once_with(health_url, timeout=0.5)
     mock_browser_open.assert_called_once_with(browser_url)

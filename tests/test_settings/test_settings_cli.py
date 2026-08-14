@@ -48,6 +48,7 @@ def test_settings_cmd_with_no_options(patch_ensure_port: Generator[None]) -> Non
     frontend_directory = Path("/frontend")
     with (
         patch("fmu_settings_cli.settings.cli.start_app") as mock_start_app,
+        patch("fmu_settings_cli.settings.cli.uuid4", return_value="run-123"),
         patch(
             "fmu_settings_cli.settings.cli._get_static_directory",
             return_value=frontend_directory,
@@ -59,6 +60,7 @@ def test_settings_cmd_with_no_options(patch_ensure_port: Generator[None]) -> Non
     mock_start_app.assert_called_once()
     assert mock_start_app.call_args.kwargs["port"] == APP_PORT
     assert mock_start_app.call_args.kwargs["frontend_directory"] == frontend_directory
+    assert mock_start_app.call_args.kwargs["run_id"] == "run-123"
 
 
 def test_settings_cmd_with_port_host_options(
@@ -123,6 +125,8 @@ def test_settings_api_cmd(patch_ensure_port: Generator[None]) -> None:
         mock_start_api_server.assert_called_once()
 
     assert result.exit_code == 0
+    assert mock_start_api_server.call_args.kwargs["enable_telemetry"] is False
+    assert mock_start_api_server.call_args.kwargs["run_id"] is None
 
 
 def test_settings_api_cmd_with_help(patch_ensure_port: Generator[None]) -> None:
@@ -134,6 +138,7 @@ def test_settings_api_cmd_with_help(patch_ensure_port: Generator[None]) -> None:
     assert "--reload" in result.stdout
     assert "--print-token" in result.stdout
     assert "--print-url" in result.stdout
+    assert "--telemetry" in result.stdout
     assert "--api-port" not in result.stdout
     assert "--log-level" in result.stdout
 
@@ -158,6 +163,23 @@ def test_settings_api_cmd_with_reload(
         assert kwargs["reload"] is True
 
     assert result.exit_code == 0
+
+
+def test_settings_api_cmd_with_telemetry(
+    patch_ensure_port: Generator[None],
+) -> None:
+    """The development command enables telemetry only when requested."""
+    with (
+        patch("fmu_settings_cli.settings.cli.uuid4", return_value="run-123"),
+        patch(
+            "fmu_settings_cli.settings.cli.start_api_server"
+        ) as mock_start_api_server,
+    ):
+        result = runner.invoke(app, ["settings", "api", "--telemetry"])
+
+    assert result.exit_code == 0
+    assert mock_start_api_server.call_args.kwargs["enable_telemetry"] is True
+    assert mock_start_api_server.call_args.kwargs["run_id"] == "run-123"
 
 
 def test_settings_api_cmd_with_print_token(
