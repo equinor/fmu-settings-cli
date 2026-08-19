@@ -359,7 +359,7 @@ wheels = [
 
 [[package]]
 name = "fmu-settings-api"
-version = "1.3.0"
+version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi" },
@@ -374,9 +374,9 @@ dependencies = [
     { name = "structlog" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bb/58/4754d3af94954f0d2be24fa302bff4e65f4a1a25816008e52944bcfc824c/fmu_settings_api-1.3.0.tar.gz", hash = "sha256:2f45eb0e6da53a07b9beb40712a30fdb15ef35a13685d61a8fe8574e082cbfd9", size = 243094, upload-time = "2026-08-11T08:01:05.819Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/db/a4/e7e83a982c8c0dbef99d9f51d7811e5b0d7222a4b12d98203c0968eeac36/fmu_settings_api-1.3.1.tar.gz", hash = "sha256:01c43048030cce5aca98c47b24a7019a6b80aba2f5a9b369e7e3ceb210ea707a", size = 243136, upload-time = "2026-08-13T10:29:03.153Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/14/6e/1aeabca457e00a980670eba0b42b59649a32a3392f2a3ba08366bf115b3a/fmu_settings_api-1.3.0-py3-none-any.whl", hash = "sha256:6acd49647177f6726b85d83f50fb7ce93f15d75e63d94d68192a11400d9115be", size = 89731, upload-time = "2026-08-11T08:01:04.401Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/8b/6d8330a2d932b88b83fb29202d6f1779f17a10d596fb3092f1d7608133b3/fmu_settings_api-1.3.1-py3-none-any.whl", hash = "sha256:c8a8d845a9387fbcd6db6af8279c8a7c1bd7f24f992465f828bc576763cc0acb", size = 89755, upload-time = "2026-08-13T10:29:01.555Z" },
 ]
 
 [[package]]
