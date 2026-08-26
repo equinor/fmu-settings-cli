@@ -24,12 +24,13 @@ def init_worker() -> None:  # pragma: no cover
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
 
 
-def start_app(
+def start_app(  # noqa: PLR0913
     token: str,
     port: int,
     host: str,
     log_level: str,
     frontend_directory: Path,
+    run_id: str,
 ) -> None:
     """Start the API and GUI in one application server.
 
@@ -39,6 +40,7 @@ def start_app(
         host: The host the application will bind to.
         log_level: The log level to give to Uvicorn.
         frontend_directory: The directory that contains the built GUI.
+        run_id: The identifier shared by telemetry from this application run.
     """
     with ProcessPoolExecutor(max_workers=1, initializer=init_worker) as executor:
         try:
@@ -52,6 +54,8 @@ def start_app(
                 reload=False,
                 log_level=log_level,
                 frontend_directory=frontend_directory,
+                enable_telemetry=True,
+                run_id=run_id,
             )
 
             is_start_up = True

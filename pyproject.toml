@@ -31,9 +31,9 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
     "fmu-datamodels",
-    "fmu-settings>=0.32.1", # minimum version with public init/global config API exports
-    "fmu-settings-api>=1.2.0", # One server for API and GUI
-    "fmu-settings-gui>=1.1.0", # One server for API and GUI
+    "fmu-settings>=1.2.0", # telemetry support
+    "fmu-settings-api>=1.4.0", # telemetry support
+    "fmu-settings-gui>=1.1.2", # SSO race condition fix
     "rich",
     "typer",
 ]
