@@ -61,6 +61,7 @@ def test_settings_cmd_with_no_options(patch_ensure_port: Generator[None]) -> Non
     assert mock_start_app.call_args.kwargs["port"] == APP_PORT
     assert mock_start_app.call_args.kwargs["frontend_directory"] == frontend_directory
     assert mock_start_app.call_args.kwargs["run_id"] == "run-123"
+    assert mock_start_app.call_args.kwargs["environment"] == "production"
 
 
 def test_settings_cmd_with_port_host_options(
@@ -127,6 +128,7 @@ def test_settings_api_cmd(patch_ensure_port: Generator[None]) -> None:
     assert result.exit_code == 0
     assert mock_start_api_server.call_args.kwargs["enable_telemetry"] is False
     assert mock_start_api_server.call_args.kwargs["run_id"] is None
+    assert mock_start_api_server.call_args.kwargs["environment"] == "development"
 
 
 def test_settings_api_cmd_with_help(patch_ensure_port: Generator[None]) -> None:
@@ -180,6 +182,7 @@ def test_settings_api_cmd_with_telemetry(
     assert result.exit_code == 0
     assert mock_start_api_server.call_args.kwargs["enable_telemetry"] is True
     assert mock_start_api_server.call_args.kwargs["run_id"] == "run-123"
+    assert mock_start_api_server.call_args.kwargs["environment"] == "development"
 
 
 def test_settings_api_cmd_with_print_token(
