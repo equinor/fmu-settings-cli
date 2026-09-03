@@ -117,6 +117,7 @@ def api(  # noqa: PLR0913
         log_level=log_level,
         enable_telemetry=enable_telemetry,
         run_id=str(uuid4()) if enable_telemetry else None,
+        environment="development",
     )
 
 
@@ -162,4 +163,5 @@ def settings(
         log_level=log_level,
         frontend_directory=_get_static_directory(),
         run_id=str(uuid4()),
+        environment="production",
     )

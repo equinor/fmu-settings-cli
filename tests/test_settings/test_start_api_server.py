@@ -26,6 +26,7 @@ def test_start_api_server() -> None:
             frontend_directory=frontend_directory,
             enable_telemetry=False,
             run_id=None,
+            environment="development",
         )
 
 
@@ -43,10 +44,16 @@ def test_start_api_server_fails() -> None:
 
 
 def test_start_api_server_forwards_telemetry_options() -> None:
-    """The CLI passes telemetry activation and the run ID to the API."""
+    """The CLI passes telemetry activation, run ID, and environment to the API."""
     token = generate_auth_token()
     with patch("fmu_settings_api.run_server") as mock_run_server:
-        start_api_server(token, enable_telemetry=True, run_id="run-123")
+        start_api_server(
+            token,
+            enable_telemetry=True,
+            run_id="run-123",
+            environment="production",
+        )
 
     assert mock_run_server.call_args.kwargs["enable_telemetry"] is True
     assert mock_run_server.call_args.kwargs["run_id"] == "run-123"
+    assert mock_run_server.call_args.kwargs["environment"] == "production"
