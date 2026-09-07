@@ -84,7 +84,7 @@ def test_init_looks_for_global_config(in_fmu_project: Path) -> None:
     assert result.exit_code == 0
 
 
-def test_init_adds_global_variables_without_masterdata(
+def test_init_succeeds_without_sumo_config(
     in_fmu_project: Path,
     global_variables_without_masterdata: dict[str, Any],
 ) -> None:
