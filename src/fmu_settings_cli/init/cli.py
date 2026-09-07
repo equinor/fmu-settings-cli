@@ -27,6 +27,16 @@ init_cmd = typer.Typer(
 )
 
 
+def _has_no_sumo_configuration(error: ValidationError) -> bool:
+    """Return whether all Sumo configuration sections are absent."""
+    missing_fields = {
+        item["loc"][0]
+        for item in error.errors()
+        if item["type"] == "missing" and len(item["loc"]) == 1
+    }
+    return {"access", "masterdata", "model"} <= missing_fields
+
+
 @init_cmd.callback(invoke_without_command=True)
 def init(  # noqa: PLR0912
     ctx: typer.Context,
@@ -98,15 +108,16 @@ def init(  # noqa: PLR0912
     try:
         global_config = find_global_config(cwd)
     except ValidationError as e:
-        validation_warning(
-            e,
-            "Unable to import masterdata.",
-            reason="Validation of the global config/global variables failed.",
-            suggestion=(
-                "You will need to establish valid SMDA masterdata in FMU "
-                "Settings by running and opening 'fmu settings'."
-            ),
-        )
+        if not _has_no_sumo_configuration(e):
+            validation_warning(
+                e,
+                "Unable to import masterdata.",
+                reason="Validation of the global config/global variables failed.",
+                suggestion=(
+                    "You will need to establish valid SMDA masterdata in FMU "
+                    "Settings by running and opening 'fmu settings'."
+                ),
+            )
     except InvalidGlobalConfigurationError:
         warning(
             "Unable to import masterdata.",

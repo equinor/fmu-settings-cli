@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import pytest
 import yaml
 from fmu.datamodels.fmu_results.global_configuration import GlobalConfiguration
 from fmu.settings import (
@@ -87,7 +88,7 @@ def test_init_adds_global_variables_without_masterdata(
     in_fmu_project: Path,
     global_variables_without_masterdata: dict[str, Any],
 ) -> None:
-    """Tests that 'fmu init' fails creating a .fmu if the config has no masterdata."""
+    """Tests that 'fmu init' succeeds quietly when no Sumo config exists."""
     tmp_path = in_fmu_project
     fmuconfig_out = tmp_path / "fmuconfig/output"
     fmuconfig_out.mkdir(parents=True, exist_ok=True)
@@ -99,14 +100,7 @@ def test_init_adds_global_variables_without_masterdata(
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 0
 
-    assert "Warning: Unable to import masterdata" in result.stderr
-    assert (
-        "Reason: Validation of the global config/global variables failed."
-        in result.stderr
-    )
-    assert "access: Field required" in result.stderr
-    assert "masterdata: Field required" in result.stderr
-    assert "model: Field required" in result.stderr
+    assert result.stderr == ""
     assert "Success: All done!" in result.stdout
 
     fmu_dir = find_nearest_fmu_directory()
@@ -114,6 +108,60 @@ def test_init_adds_global_variables_without_masterdata(
     assert fmu_dir_cfg.masterdata is None
     assert fmu_dir_cfg.access is None
     assert fmu_dir_cfg.model is None
+
+
+def test_init_warns_for_invalid_sumo_configuration(
+    in_fmu_project: Path,
+    generate_strict_valid_globalconfiguration: Callable[[], GlobalConfiguration],
+) -> None:
+    """Tests that 'fmu init' warns when Sumo config is present but invalid."""
+    global_variables = generate_strict_valid_globalconfiguration().model_dump(
+        mode="json", by_alias=True
+    )
+    del global_variables["model"]["name"]
+
+    fmuconfig_out = in_fmu_project / "fmuconfig/output"
+    fmuconfig_out.mkdir(parents=True, exist_ok=True)
+    (fmuconfig_out / "global_variables.yml").write_text(
+        yaml.safe_dump(global_variables)
+    )
+
+    result = runner.invoke(app, ["init"])
+
+    assert result.exit_code == 0
+    assert "Warning: Unable to import masterdata" in result.stderr
+    stderr = " ".join(result.stderr.split())
+    assert "Field required" in stderr
+    assert "Success: All done!" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "missing_sections",
+    [("model",), ("access", "masterdata")],
+)
+def test_init_warns_when_some_sumo_sections_are_missing(
+    in_fmu_project: Path,
+    generate_strict_valid_globalconfiguration: Callable[[], GlobalConfiguration],
+    missing_sections: tuple[str, ...],
+) -> None:
+    """Tests that one or two missing Sumo sections produce a warning."""
+    global_variables = generate_strict_valid_globalconfiguration().model_dump(
+        mode="json", by_alias=True
+    )
+    for section in missing_sections:
+        del global_variables[section]
+
+    fmuconfig_out = in_fmu_project / "fmuconfig/output"
+    fmuconfig_out.mkdir(parents=True, exist_ok=True)
+    (fmuconfig_out / "global_variables.yml").write_text(
+        yaml.safe_dump(global_variables)
+    )
+
+    result = runner.invoke(app, ["init"])
+
+    assert result.exit_code == 0
+    assert "Warning: Unable to import masterdata" in result.stderr
+    assert "Success: All done!" in result.stdout
 
 
 def test_init_adds_global_variables_with_masterdata(
