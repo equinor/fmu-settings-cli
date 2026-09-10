@@ -55,6 +55,7 @@ def default_settings_args() -> Generator[dict[str, Any]]:
             "log_level": "critical",
             "frontend_directory": Path("/frontend"),
             "run_id": "run-123",
+            "environment": "production",
         }
 
 

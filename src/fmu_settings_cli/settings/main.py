@@ -14,6 +14,7 @@ from ._utils import (
     create_authorized_url,
 )
 from .api_server import start_api_server
+from .constants import Environment
 
 API_HEALTH_WAIT_TIMEOUT_SECONDS = 30
 
@@ -31,6 +32,7 @@ def start_app(  # noqa: PLR0913
     log_level: str,
     frontend_directory: Path,
     run_id: str,
+    environment: Environment,
 ) -> None:
     """Start the API and GUI in one application server.
 
@@ -41,6 +43,7 @@ def start_app(  # noqa: PLR0913
         log_level: The log level to give to Uvicorn.
         frontend_directory: The directory that contains the built GUI.
         run_id: The identifier shared by telemetry from this application run.
+        environment: The runtime environment included with telemetry.
     """
     with ProcessPoolExecutor(max_workers=1, initializer=init_worker) as executor:
         try:
@@ -56,6 +59,7 @@ def start_app(  # noqa: PLR0913
                 frontend_directory=frontend_directory,
                 enable_telemetry=True,
                 run_id=run_id,
+                environment=environment,
             )
 
             is_start_up = True

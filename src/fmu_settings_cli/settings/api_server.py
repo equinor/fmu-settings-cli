@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fmu_settings_cli.prints import info
 
-from .constants import APP_PORT, HOST
+from .constants import APP_PORT, HOST, Environment
 
 
 def start_api_server(  # noqa: PLR0913
@@ -18,6 +18,7 @@ def start_api_server(  # noqa: PLR0913
     frontend_directory: Path | None = None,
     enable_telemetry: bool = False,
     run_id: str | None = None,
+    environment: Environment = "development",
 ) -> None:
     """Starts the fmu-settings-api server.
 
@@ -32,6 +33,7 @@ def start_api_server(  # noqa: PLR0913
         frontend_directory: The directory that contains the built GUI.
         enable_telemetry: Whether to send API telemetry through the site plugin.
         run_id: The identifier shared by telemetry from one application run.
+        environment: The runtime environment included with telemetry.
     """
     from fmu_settings_api import run_server  # noqa: PLC0415 lazy load
 
@@ -48,6 +50,7 @@ def start_api_server(  # noqa: PLR0913
             frontend_directory=frontend_directory,
             enable_telemetry=enable_telemetry,
             run_id=run_id,
+            environment=environment,
         )
     except Exception as e:
         raise RuntimeError(f"Could not start API server: {e}") from e
