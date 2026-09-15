@@ -1,5 +1,6 @@
 """Tests for the 'fmu sync' commands."""
 
+import json
 from collections.abc import Generator
 from pathlib import Path
 from uuid import uuid4
@@ -82,7 +83,9 @@ def test_sync_invalid_to_dir_config_content_raises_validation_error(
     monkeypatch.chdir(project_a.path.parent)
 
     # Make '--to' target config invalid
-    project_b.config.path.write_text('{"invalid": 1}')
+    target_config = json.loads(project_b.config.path.read_text())
+    target_config["cache_max_revisions"] = 1
+    project_b.config.path.write_text(json.dumps(target_config))
     result = runner.invoke(
         app, ["sync", "--to", str(project_b.path.parent)], input="y\n"
     )
@@ -94,7 +97,7 @@ def test_sync_invalid_to_dir_config_content_raises_validation_error(
         "Reason: Invalid content in resource file for 'ProjectConfigManager"
         in result.stderr
     )
-    assert "validation errors" in result.stderr
+    assert "validation error for ProjectConfig" in result.stderr
     assert result.exit_code == 1
 
 
