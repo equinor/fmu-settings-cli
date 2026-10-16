@@ -26,9 +26,9 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
     "fmu-datamodels",
-    "fmu-settings>=1.4.1",     # drogon wellbore mappings
-    "fmu-settings-api>=1.5.2", # rms rel path
-    "fmu-settings-gui>=1.2.0", # wellbore mappings
+    "fmu-settings>=1.6.0",     # for Komodo 2026.11
+    "fmu-settings-api>=1.6.0", # for Komodo 2026.11
+    "fmu-settings-gui>=1.3.0", # for Komodo 2026.11
     "rich",
     "typer",
 ]
@@ -108,8 +108,8 @@ convention = "google"
 
 [tool.uv]
 exclude-newer = "1 week"
-# Exclude specific package(s) we maintain for quick iteration
 
+# Exclude specific package(s) we maintain for quick iteration
 [tool.uv.exclude-newer-package]
 "fmu-datamodels" = false
 "fmu-settings" = false
