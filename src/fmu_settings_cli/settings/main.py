@@ -68,13 +68,15 @@ def start_app(  # noqa: PLR0913
             while True:
                 try:
                     # Check once a half second if the application server has
-                    # completed. This will typically mean it crashed or otherwise
-                    # failed.
+                    # completed. A clean return after startup is normal shutdown.
                     server_future.result(timeout=0.5)
-                    error(
-                        "Application server unexpectedly exited. Please report this "
-                        "as a bug",
-                    )
+                    if is_start_up:
+                        error(
+                            "Application server unexpectedly exited. Please report "
+                            "this as a bug",
+                        )
+                    else:
+                        info("FMU Settings has stopped.")
                     break
                 except TimeoutError:
                     # This is the valid case, where the server future did not complete
