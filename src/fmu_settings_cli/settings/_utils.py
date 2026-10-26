@@ -8,7 +8,7 @@ import typer
 
 from fmu_settings_cli.prints import error
 
-from .constants import INVALID_PID
+from .constants import NO_PROCESS_PID
 
 
 def generate_auth_token() -> str:
@@ -33,7 +33,7 @@ def get_process_on_port(port: int) -> tuple[int, str]:
 
     Returns:
         int, str tuple with the pid and command used to launch the process.  Returns
-            INVALID_PID (-1), "Error" if no listener was found.
+            NO_PROCESS_PID (-1), "Error" if no listener was found.
     """
     try:
         result = subprocess.run(
@@ -69,14 +69,13 @@ def get_process_on_port(port: int) -> tuple[int, str]:
             suggestion="Please try again.",
         )
         raise typer.Abort from exc
-    return (INVALID_PID, "Error")
+    return (NO_PROCESS_PID, "Error")
 
 
 def ensure_port(port: int) -> None:
     """Checks if a required port is open and fails gracefully if not."""
     pid, process = get_process_on_port(port)
-    # Invalid pid means no process running
-    if pid == INVALID_PID:
+    if pid == NO_PROCESS_PID:
         return
 
     error(

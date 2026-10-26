@@ -13,7 +13,7 @@ from fmu_settings_cli.settings._utils import (
     generate_auth_token,
     get_process_on_port,
 )
-from fmu_settings_cli.settings.constants import INVALID_PID
+from fmu_settings_cli.settings.constants import NO_PROCESS_PID
 
 
 def test_generate_auth_token() -> None:
@@ -72,7 +72,7 @@ def test_get_process_on_port_no_process(mock_run: MagicMock) -> None:
     mock_run.return_value = mock_lsof
 
     result = get_process_on_port(9999)
-    assert result == (INVALID_PID, "Error")
+    assert result == (NO_PROCESS_PID, "Error")
 
     mock_run.assert_any_call(
         ["lsof", "-nP", "-iTCP:9999", "-sTCP:LISTEN", "-t"],
@@ -95,13 +95,13 @@ def test_get_process_on_port_returns_invalid_pid_when_lsof_finds_no_listener(
     )
 
     result = get_process_on_port(9999)
-    assert result == (INVALID_PID, "Error")
+    assert result == (NO_PROCESS_PID, "Error")
 
 
 @patch("fmu_settings_cli.settings._utils.get_process_on_port")
 def test_ensure_port_does_nothing_if_invalid_pid(mock_get_process: MagicMock) -> None:
     """Tests the valid, success case of ensure_port()."""
-    mock_get_process.return_value = (INVALID_PID, "Error")
+    mock_get_process.return_value = (NO_PROCESS_PID, "Error")
     # Does not raise/fail
     ensure_port(8000)
 

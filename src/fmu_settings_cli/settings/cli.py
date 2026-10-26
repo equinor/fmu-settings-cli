@@ -15,9 +15,9 @@ from ._utils import (
     get_process_on_port,
 )
 from .api_server import start_api_server
-from .constants import APP_PORT, HOST, INVALID_PID, AppPort, GuiPort, LogLevel
+from .constants import APP_PORT, HOST, NO_PROCESS_PID, AppPort, GuiPort, LogLevel
 from .main import start_app
-from .restart import confirm_restart, stop_process
+from .restart import confirm_restart, ensure_fmu_settings, stop_process
 
 
 def _get_static_directory() -> Path:
@@ -156,9 +156,10 @@ def settings(
         return
 
     pid, _ = get_process_on_port(port)
-    if pid != INVALID_PID:
+    if pid != NO_PROCESS_PID:
+        ensure_fmu_settings(port, host)
         if confirm_restart():
-            stop_process(port)
+            stop_process(port, host)
         else:
             info("Restart cancelled.")
             return

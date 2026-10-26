@@ -12,4 +12,4 @@ AppPort: TypeAlias = Literal[5173, 3000, 8000]
 LogLevel: TypeAlias = Literal["debug", "info", "warning", "error", "critical"]
 Environment: TypeAlias = Literal["development", "production"]
 
-INVALID_PID = -1
+NO_PROCESS_PID = -1
