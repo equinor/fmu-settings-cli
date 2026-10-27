@@ -21,7 +21,6 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
-certifi = { timestamp = "0001-01-01T00:00:00Z", span = "PT0S" }
 fmu-datamodels = false
 fmu-settings = false
 fmu-settings-api = false
@@ -681,7 +680,7 @@ wheels = [
 
 [[package]]
 name = "fmu-settings-api"
-version = "1.6.0"
+version = "1.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi" },
@@ -698,9 +697,9 @@ dependencies = [
     { name = "sumo-wrapper-python" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/09/7afb5a7ffbf12300c68d7252ad6caa3d94f1aae30458e594bba92479df49/fmu_settings_api-1.6.0.tar.gz", hash = "sha256:d0d4da55e715b4e95cac3dc94cd085e011ee869327ce258c2a74946e749d6625", size = 293846, upload-time = "2026-10-14T09:47:15.363Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/4b/59ede6db23d8d04fb1bc28c4fd752631152c0576f69c088bc6bbc4d99ebe/fmu_settings_api-1.7.0.tar.gz", hash = "sha256:2a3ed15bb7a89814c9dcca1f604236af1c4967df75f00db7fc85e4a2b384179b", size = 301138, upload-time = "2026-10-27T10:23:25.446Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2c/0c/1f843abef4bd5cd2fa4e153612d50fc0cd7843cb390791e083c03cc6d9f2/fmu_settings_api-1.6.0-py3-none-any.whl", hash = "sha256:160536b2a22c8f11929acd1dd0b3bce5efbdce70a4c7054bd7d6a33b6d2d26f4", size = 95779, upload-time = "2026-10-14T09:47:13.535Z" },
+    { url = "https://files.pythonhosted.org/packages/23/ee/1c92c08082ca704dbee5c65c5f21cb81b87b50eb1f8752c12babc8686449/fmu_settings_api-1.7.0-py3-none-any.whl", hash = "sha256:8f61e7c9ad1d9200d4215f0bd638ca90a600082a283b556a3a1d8ffd91c6d8ab", size = 96993, upload-time = "2026-10-27T10:23:23.984Z" },
 ]
 
 [[package]]
@@ -731,7 +730,7 @@ dev = [
 requires-dist = [
     { name = "fmu-datamodels" },
     { name = "fmu-settings", specifier = ">=1.6.0" },
-    { name = "fmu-settings-api", specifier = ">=1.6.0" },
+    { name = "fmu-settings-api", specifier = ">=1.7.0" },
     { name = "fmu-settings-gui", specifier = ">=1.3.0" },
     { name = "mypy", marker = "extra == 'dev'" },
     { name = "pytest", marker = "extra == 'dev'" },
