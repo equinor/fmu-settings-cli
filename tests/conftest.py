@@ -60,9 +60,15 @@ def default_settings_args() -> Generator[dict[str, Any]]:
 
 
 @pytest.fixture
-def patch_ensure_port() -> Generator[None]:
-    """Patches ensure port so tests can run if fmu-settings is running."""
-    with patch("fmu_settings_cli.settings.cli.ensure_port"):
+def mock_available_port() -> Generator[None]:
+    """Mock both port checks so tests do not depend on running applications."""
+    with (
+        patch("fmu_settings_cli.settings.cli.ensure_port"),
+        patch(
+            "fmu_settings_cli.settings.cli.get_process_on_port",
+            return_value=(constants.NO_PROCESS_PID, "Error"),
+        ),
+    ):
         yield
 
 

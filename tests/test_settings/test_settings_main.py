@@ -157,10 +157,10 @@ def test_start_app_reports_system_exit(
     assert f"port {default_settings_args['port']}" in stderr
 
 
-def test_start_app_reports_unexpected_exit(
+def test_start_app_reports_exit_before_health_check_passes(
     default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
 ) -> None:
-    """A server that returns is reported as an unexpected exit."""
+    """Tests that an exit before the health check passes reports an error."""
     future = MagicMock()
     future.result.return_value = None
 
@@ -183,3 +183,23 @@ def test_start_app_reports_exception(
         start_app(generate_auth_token(), **default_settings_args)
 
     assert "Application server failed with: foo" in capsys.readouterr().err
+
+
+def test_start_app_reports_clean_exit_after_health_check_passes(
+    default_settings_args: dict[str, Any], capsys: CaptureFixture[str]
+) -> None:
+    """Tests that a clean exit after the health check passes reports shutdown."""
+    future = MagicMock()
+    future.result.side_effect = [TimeoutError, None]
+    with (
+        patch("fmu_settings_cli.settings.main.ProcessPoolExecutor") as mock_executor,
+        patch("fmu_settings_cli.settings.main.urllib.request.urlopen") as urlopen,
+        patch("fmu_settings_cli.settings.main.webbrowser.open"),
+    ):
+        _executor_with_future(mock_executor, future)
+        urlopen.return_value.__enter__.return_value.status = 200
+        start_app(generate_auth_token(), **default_settings_args)
+
+    captured = capsys.readouterr()
+    assert "FMU Settings has stopped." in captured.out
+    assert not captured.err

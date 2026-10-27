@@ -18,7 +18,7 @@ from fmu_settings_cli.__main__ import app
 runner = CliRunner()
 
 
-def test_sync_cmd_with_help(patch_ensure_port: Generator[None]) -> None:
+def test_sync_cmd_with_help(mock_available_port: Generator[None]) -> None:
     """Tests that 'fmu sync' emits help information."""
     result = runner.invoke(app, ["sync", "--help"])
 

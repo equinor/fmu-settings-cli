@@ -8,7 +8,7 @@ import typer
 
 from fmu_settings_cli.prints import error
 
-from .constants import INVALID_PID
+from .constants import NO_PROCESS_PID
 
 
 def generate_auth_token() -> str:
@@ -29,40 +29,53 @@ def create_authorized_url(token: str, host: str, gui_port: int) -> str:
 
 
 def get_process_on_port(port: int) -> tuple[int, str]:
-    """Gets the process using a particular port, if possible.
+    """Get the process listening on a TCP port.
 
     Returns:
         int, str tuple with the pid and command used to launch the process.  Returns
-            INVALID_PID (-1), "Error" if the check has failed, i.e., no process is
-            running on the port.
+            NO_PROCESS_PID (-1), "Error" if no listener was found.
     """
     try:
         result = subprocess.run(
-            ["lsof", "-i", f":{port}", "-t"],
+            ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-t"],
             capture_output=True,
             text=True,
             check=True,
         )
         pids = result.stdout.strip().split("\n")
         if pids and pids[0]:
-            # Get the process name
-            ps_result = subprocess.run(
-                ["ps", "-p", pids[0], "-o", "comm="],
-                capture_output=True,
-                text=True,
-                check=True,
+            pid = int(pids[0])
+            try:
+                ps_result = subprocess.run(
+                    ["ps", "-p", str(pid), "-o", "comm="],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+            except (OSError, subprocess.CalledProcessError):
+                return pid, "unknown"
+            return pid, ps_result.stdout.strip()
+    except subprocess.CalledProcessError as exc:
+        # lsof uses status 1 for both no matches and errors.
+        if exc.returncode != 1 or exc.stdout or exc.stderr:
+            error(
+                "Could not check whether FMU Settings is running.",
+                suggestion="Please try again.",
             )
-            return (int(pids[0]), ps_result.stdout.strip())
-    except subprocess.CalledProcessError:
-        pass
-    return (INVALID_PID, "Error")
+            raise typer.Abort from exc
+    except OSError as exc:
+        error(
+            "Could not check whether FMU Settings is running.",
+            suggestion="Please try again.",
+        )
+        raise typer.Abort from exc
+    return (NO_PROCESS_PID, "Error")
 
 
 def ensure_port(port: int) -> None:
     """Checks if a required port is open and fails gracefully if not."""
     pid, process = get_process_on_port(port)
-    # Invalid pid means no process running
-    if pid == INVALID_PID:
+    if pid == NO_PROCESS_PID:
         return
 
     error(

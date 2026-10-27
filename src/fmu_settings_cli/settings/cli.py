@@ -12,10 +12,12 @@ from ._utils import (
     create_authorized_url,
     ensure_port,
     generate_auth_token,
+    get_process_on_port,
 )
 from .api_server import start_api_server
-from .constants import APP_PORT, HOST, AppPort, GuiPort, LogLevel
+from .constants import APP_PORT, HOST, NO_PROCESS_PID, AppPort, GuiPort, LogLevel
 from .main import start_app
+from .restart import confirm_restart, ensure_fmu_settings, stop_process
 
 
 def _get_static_directory() -> Path:
@@ -153,7 +155,14 @@ def settings(
     if ctx.invoked_subcommand is not None:
         return
 
-    ensure_port(port)
+    pid, _ = get_process_on_port(port)
+    if pid != NO_PROCESS_PID:
+        ensure_fmu_settings(port, host)
+        if confirm_restart():
+            stop_process(port, host)
+        else:
+            info("Restart cancelled.")
+            return
 
     token = generate_auth_token()
     start_app(

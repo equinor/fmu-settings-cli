@@ -13,7 +13,7 @@ from fmu_settings_cli.settings._utils import (
     generate_auth_token,
     get_process_on_port,
 )
-from fmu_settings_cli.settings.constants import INVALID_PID
+from fmu_settings_cli.settings.constants import NO_PROCESS_PID
 
 
 def test_generate_auth_token() -> None:
@@ -49,7 +49,7 @@ def test_get_process_on_port_success(mock_run: MagicMock) -> None:
     assert result == (1234, "python3")
 
     mock_run.assert_any_call(
-        ["lsof", "-i", ":8000", "-t"],
+        ["lsof", "-nP", "-iTCP:8000", "-sTCP:LISTEN", "-t"],
         capture_output=True,
         text=True,
         check=True,
@@ -72,10 +72,10 @@ def test_get_process_on_port_no_process(mock_run: MagicMock) -> None:
     mock_run.return_value = mock_lsof
 
     result = get_process_on_port(9999)
-    assert result == (INVALID_PID, "Error")
+    assert result == (NO_PROCESS_PID, "Error")
 
     mock_run.assert_any_call(
-        ["lsof", "-i", ":9999", "-t"],
+        ["lsof", "-nP", "-iTCP:9999", "-sTCP:LISTEN", "-t"],
         capture_output=True,
         text=True,
         check=True,
@@ -83,22 +83,25 @@ def test_get_process_on_port_no_process(mock_run: MagicMock) -> None:
 
 
 @patch("subprocess.run")
-def test_get_process_on_port_subprocess_fails(mock_run: MagicMock) -> None:
+@pytest.mark.parametrize(("stdout", "stderr"), [(None, None), ("", "")])
+def test_get_process_on_port_returns_invalid_pid_when_lsof_finds_no_listener(
+    mock_run: MagicMock,
+    stdout: str | None,
+    stderr: str | None,
+) -> None:
     """Tests that the correct result is returned if no process is found."""
-    mock_lsof = MagicMock()
-    mock_lsof.stdout = "\n"
-    mock_lsof.returncode = 1
-
-    mock_run.side_effect = subprocess.CalledProcessError(1, "lsof")
+    mock_run.side_effect = subprocess.CalledProcessError(
+        1, "lsof", output=stdout, stderr=stderr
+    )
 
     result = get_process_on_port(9999)
-    assert result == (INVALID_PID, "Error")
+    assert result == (NO_PROCESS_PID, "Error")
 
 
 @patch("fmu_settings_cli.settings._utils.get_process_on_port")
 def test_ensure_port_does_nothing_if_invalid_pid(mock_get_process: MagicMock) -> None:
     """Tests the valid, success case of ensure_port()."""
-    mock_get_process.return_value = (INVALID_PID, "Error")
+    mock_get_process.return_value = (NO_PROCESS_PID, "Error")
     # Does not raise/fail
     ensure_port(8000)
 
@@ -116,3 +119,43 @@ def test_ensure_port_sys_exits_if_port_in_use(
     assert "port 8000" in stderr
     assert "PID: 1234" in stderr
     assert "command: python3" in stderr
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        FileNotFoundError(),
+        subprocess.CalledProcessError(2, "lsof"),
+        subprocess.CalledProcessError(
+            1,
+            "lsof",
+            output="",
+            stderr="lsof: can't open pipes: Too many open files\n",
+        ),
+        subprocess.CalledProcessError(1, "lsof", output="1234\n", stderr=""),
+    ],
+)
+def test_get_process_on_port_aborts_if_lookup_fails(
+    failure: Exception, capsys: CaptureFixture[str]
+) -> None:
+    """Tests that a missing or failed listener lookup aborts the command."""
+    with patch("subprocess.run", side_effect=failure), pytest.raises(typer.Abort):
+        get_process_on_port(8000)
+    output = " ".join(capsys.readouterr().err.split())
+    assert "Could not check whether FMU Settings is running." in output
+    assert "Please try again." in output
+
+
+@pytest.mark.parametrize(
+    "failure", [subprocess.CalledProcessError(1, "ps"), FileNotFoundError()]
+)
+def test_get_process_on_port_returns_pid_when_name_lookup_fails(
+    failure: Exception,
+) -> None:
+    """Tests that a failed process-name lookup preserves the listener PID."""
+    listener = MagicMock(stdout="1234\n")
+    with patch(
+        "subprocess.run",
+        side_effect=[listener, failure],
+    ):
+        assert get_process_on_port(8000) == (1234, "unknown")

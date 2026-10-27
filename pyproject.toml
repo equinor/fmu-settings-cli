@@ -28,7 +28,7 @@ dynamic = ["version"]
 dependencies = [
     "fmu-datamodels",
     "fmu-settings>=1.6.0",     # for Komodo 2026.11
-    "fmu-settings-api>=1.6.0", # for Komodo 2026.11
+    "fmu-settings-api>=1.7.0", # /health application identifier for restart checks
     "fmu-settings-gui>=1.3.0", # for Komodo 2026.11
     "rich",
     "typer",
