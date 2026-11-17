@@ -100,10 +100,8 @@ def test_settings_cmd_with_invalid_port(
         result = runner.invoke(app, ["settings", "--port", "9999"])
 
     assert result.exit_code == 2
-    assert (
-        "Invalid value for '--port': '9999' is not one of '5173', '3000', '8000'"
-        in result.stderr
-    )
+    assert "Invalid value for '--port'" in result.stderr
+    assert "'9999' is not one of '5173', '3000', '8000'" in result.stderr
 
 
 def test_settings_api_cmd_with_invalid_gui_port(
@@ -113,10 +111,8 @@ def test_settings_api_cmd_with_invalid_gui_port(
     result = runner.invoke(app, ["settings", "api", "--gui-port", "9999"])
 
     assert result.exit_code == 2
-    assert (
-        "Invalid value for '--gui-port': '9999' is not one of '5173', '3000', '8000'"
-        in result.stderr
-    )
+    assert "Invalid value for '--gui-port'" in result.stderr
+    assert "'9999' is not one of '5173', '3000', '8000'" in result.stderr
 
 
 def test_settings_api_cmd(mock_available_port: Generator[None]) -> None:
