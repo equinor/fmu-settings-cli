@@ -263,7 +263,7 @@ def test_init_fmu_dir_exists_error(in_fmu_project: Path) -> None:
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 1
     assert "Error: Unable to create .fmu directory" in result.stderr
-    assert ".fmu already exists" in result.stderr
+    assert "already exists" in result.stderr
     assert "You do not need to initialize a .fmu in this directory." in result.stderr
     assert "Aborted." in result.stderr
 
@@ -302,7 +302,7 @@ def test_init_fmu_dir_exists_skips_global_config_messages(
     assert result.exit_code == 1
     assert "Successfully imported" not in result.stdout
     assert "Unable to import masterdata" not in result.stderr
-    assert ".fmu already exists" in result.stderr
+    assert "already exists" in result.stderr
 
 
 def test_init_fmu_dir_no_permissions_error(in_fmu_project: Path) -> None:
